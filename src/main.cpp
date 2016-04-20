@@ -24,6 +24,8 @@ int main( int argc, char** argv )
         return -1;
     }
 
+    /* Disparity Map */
+
     StereoSGBM sgbm;
     sgbm.SADWindowSize = 7;
     sgbm.numberOfDisparities = 256; //  The greater, the less susceptible to noise, and less details
@@ -41,10 +43,23 @@ int main( int argc, char** argv )
     sgbm(image1, image2, disp);
     normalize(disp, disp_n, 0, 255, CV_MINMAX, CV_8U);
 
+    /* Depth Map */
+    Mat depth_map;
+    bool handleMissingValues = false;
+    int ddepth = CV_16S; // Default value
+    Mat Q = (Mat_<double>(4, 4) << 1, 0, 0, 0,
+                                   0, 1, 0, 0,
+                                   0, 0, 1, 0,
+                                   0, 0, 0, 1);
+
+    reprojectImageTo3D(disp, depth_map, Q, handleMissingValues, ddepth);
+
+    /* Open Window */
+
     string window_title = "Display Window";
 
     namedWindow(window_title, WINDOW_NORMAL );
-    imshow(window_title, disp_n);
+    imshow(window_title, depth_map);
     waitKey(0);
     return 0;
 }
