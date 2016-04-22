@@ -8,6 +8,12 @@ Mesh::Mesh(){}
 Mesh::Mesh(std::vector<cv::Point3f> vertices, std::vector<cv::Point3i> faces)
     : m_vertices(vertices), m_faces(faces){}
 
+template <typename T>
+inline T interpolate(const T v, const T a0, const T b0, const T a1, const T b1)
+{
+    return (((v - a0) * (b1 - a1)) / (b0 - a0)) + a1;
+}
+
 Mesh
 Mesh::generateMesh(DepthMap depthMap)
 {
@@ -28,12 +34,16 @@ Mesh::generateMesh(DepthMap depthMap)
             int v3 = (i + 1)*cols + j;     // underneath vertex
             int v4 = (i + 1)*cols + j + 1; // diagonal vertex
 
-            vertices.push_back(cv::Point3f(i, j, image.at<float>(i, j)));
+            const uchar k = image.at<uchar>(i, j);
+            vertices.push_back(cv::Point3f(
+                interpolate<float>(i, 0, rows, -1.0f, 1.0f),
+                interpolate<float>(j, 0, cols, -1.0f, 1.0f),
+                interpolate<float>(k, 0, 255,  -1.0f, 1.0f)));
 
             if(j >= cols - 2 || i >= rows - 2) continue;
 
-            faces.push_back(cv::Point3i(v1, v2, v3));
-            faces.push_back(cv::Point3i(v2, v3, v4));
+            faces.push_back(cv::Point3i(v1 + 1, v2 + 1, v3 + 1));
+            faces.push_back(cv::Point3i(v2 + 1, v3 + 1, v4 + 1));
         }
     }
 
