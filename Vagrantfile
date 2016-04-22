@@ -3,6 +3,7 @@
 
 Vagrant.configure(2) do |config|
   config.vm.box = "debian/jessie64"
+  config.ssh.forward_agent = true
 
   config.vm.provider "virtualbox" do |vb|
     vb.memory = 2048
