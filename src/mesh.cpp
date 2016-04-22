@@ -1,14 +1,15 @@
 #include "mesh.h"
 
 #include <fstream>
+#include <cstdio>
 
 Mesh::Mesh(){}
 
 Mesh::Mesh(std::vector<cv::Point3f> vertices, std::vector<cv::Point3i> faces)
     : m_vertices(vertices), m_faces(faces){}
 
-static Mesh
-generateMesh(DepthMap depthMap)
+Mesh
+Mesh::generateMesh(DepthMap depthMap)
 {
     std::vector<cv::Point3f> vertices;
     std::vector<cv::Point3i> faces;
@@ -27,7 +28,7 @@ generateMesh(DepthMap depthMap)
             int v3 = (i + 1)*cols + j;     // underneath vertex
             int v4 = (i + 1)*cols + j + 1; // diagonal vertex
 
-            vertices.push_back(cv::Point3f(i, j, image.at<float>(j, i)));
+            vertices.push_back(cv::Point3f(i, j, image.at<float>(i, j)));
 
             if(j >= cols - 2 || i >= rows - 2) continue;
 

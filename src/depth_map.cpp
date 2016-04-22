@@ -7,8 +7,8 @@ DepthMap::DepthMap() {}
 
 DepthMap::DepthMap(Mat image): m_image(image) {}
 
-static DepthMap
-generateDepthMap(InputArray disparity, InputArray Q,
+DepthMap
+DepthMap::generateDepthMap(InputArray disparity, InputArray Q,
                            bool handleMissingValues, int ddepth)
 {
     Mat depth_map; // output depth map
