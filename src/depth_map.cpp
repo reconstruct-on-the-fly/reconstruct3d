@@ -16,3 +16,6 @@ generateDepthMap(InputArray disparity, InputArray Q,
 
     return DepthMap(depth_map);
 }
+
+cv::Mat
+DepthMap::getImage() { return m_image; }

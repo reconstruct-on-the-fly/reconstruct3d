@@ -13,6 +13,9 @@ public:
                                      cv::InputArray Q,
                                      bool handleMissingValues=false,
                                      int ddepth=-1);
+
+    cv::Mat getImage();
+
 private:
     cv::Mat m_image;
 
