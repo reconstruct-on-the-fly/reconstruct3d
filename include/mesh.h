@@ -11,7 +11,7 @@ public:
     Mesh();
     Mesh(std::vector<cv::Point3f> vertices, std::vector<cv::Point3i> faces);
 
-    static Mesh generateMesh(DepthMap depthMap);
+    static Mesh generateMesh(DepthMap depthMap, float max_height);
 
     void createOBJ(std::string filepath);
 

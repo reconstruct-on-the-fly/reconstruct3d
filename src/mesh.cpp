@@ -1,7 +1,6 @@
 #include "mesh.h"
 
 #include <fstream>
-#include <cstdio>
 
 Mesh::Mesh(){}
 
@@ -15,7 +14,7 @@ inline T interpolate(const T v, const T a0, const T b0, const T a1, const T b1)
 }
 
 Mesh
-Mesh::generateMesh(DepthMap depthMap)
+Mesh::generateMesh(DepthMap depthMap, float max_height)
 {
     std::vector<cv::Point3f> vertices;
     std::vector<cv::Point3i> faces;
@@ -23,7 +22,7 @@ Mesh::generateMesh(DepthMap depthMap)
     auto image = depthMap.getImage();
 
     const unsigned int rows = image.rows;
-    const unsigned int cols = image.cols;
+    const unsigned int cols = image.cols*image.channels();
 
     for(unsigned int i = 0; i < rows; ++i)
     {
@@ -37,13 +36,14 @@ Mesh::generateMesh(DepthMap depthMap)
             const uchar k = image.at<uchar>(i, j);
             vertices.push_back(cv::Point3f(
                 interpolate<float>(i, 0, rows, -1.0f, 1.0f),
-                interpolate<float>(j, 0, cols, -1.0f, 1.0f),
-                interpolate<float>(k, 0, 255,  -1.0f, 1.0f)));
+                interpolate<float>(k, 0, 255,  -1.0f, max_height),
+                interpolate<float>(j, 0, cols, -1.0f, 1.0f)
+                ));
 
             if(j >= cols - 2 || i >= rows - 2) continue;
 
-            faces.push_back(cv::Point3i(v1 + 1, v2 + 1, v3 + 1));
-            faces.push_back(cv::Point3i(v2 + 1, v3 + 1, v4 + 1));
+            faces.push_back(cv::Point3i(v2 + 1, v4 + 1, v1 + 1));
+            faces.push_back(cv::Point3i(v4 + 1, v3 + 1, v1 + 1));
         }
     }
 
