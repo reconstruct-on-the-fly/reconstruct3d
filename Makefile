@@ -5,7 +5,7 @@ INCLUDEDIR=include
 LDFLAGS=-I$(INCLUDEDIR) `pkg-config --cflags --libs opencv`
 
 SOURCEDIR=src
-_SOURCES=main.cpp depth_map.cpp mesh.cpp
+_SOURCES=main.cpp depth_map.cpp mesh.cpp disparity_map.cpp
 SOURCES=$(patsubst %,$(SOURCEDIR)/%,$(_SOURCES))
 
 EXECUTABLE=reconstruct3d
