@@ -2,6 +2,8 @@
 #include <opencv2/highgui/highgui.hpp>
 #include "opencv2/calib3d/calib3d.hpp"
 #include <iostream>
+#include "camera.h"
+#include "image_pair.h"
 
 using namespace cv;
 using namespace std;
@@ -23,36 +25,14 @@ int main( int argc, char** argv )
         cout <<  "Could not open or find the image" << std::endl ;
         return -1;
     }
+    Camera camera = Camera::createFromFile("src/input.txt");
+    Mat R = Mat_<double>(3,3,.0);
+    Mat Q;
+    Vec<double, 3> T;
+    T[0] = 0; T[1] = 0.1; T[2] = 0;
 
-    /* Disparity Map */
-
-    StereoSGBM sgbm;
-    sgbm.SADWindowSize = 7;
-    sgbm.numberOfDisparities = 256; //  The greater, the less susceptible to noise, and less details
-    sgbm.preFilterCap = 4;
-    sgbm.minDisparity = 0;
-    sgbm.uniquenessRatio = 5;
-    sgbm.speckleWindowSize = 200;
-    sgbm.speckleRange = 2;
-    sgbm.disp12MaxDiff = 10;
-    sgbm.fullDP = false;
-    sgbm.P1 = 600; // no idea
-    sgbm.P2 = 2400; // no idea
-
-    Mat disp, disp_n;
-    sgbm(image1, image2, disp);
-    normalize(disp, disp_n, 0, 255, CV_MINMAX, CV_8U);
-
-    /* Depth Map */
-    Mat depth_map;
-    bool handleMissingValues = false;
-    int ddepth = CV_16S; // Default value
-    Mat Q = (Mat_<double>(4, 4) << 1, 0, 0, 0,
-                                   0, 1, 0, 0,
-                                   0, 0, 1, 0,
-                                   0, 0, 0, 1);
-
-    reprojectImageTo3D(disp, depth_map, Q, handleMissingValues, ddepth);
+    ImagePair imagePair(image1, image2, R, T);
+    ImagePair newImagePair = imagePair.rectify(camera, Q);
 
     /* Open Window */
 
@@ -61,5 +41,6 @@ int main( int argc, char** argv )
     namedWindow(window_title, WINDOW_NORMAL );
     imshow(window_title, depth_map);
     waitKey(0);
+
     return 0;
 }

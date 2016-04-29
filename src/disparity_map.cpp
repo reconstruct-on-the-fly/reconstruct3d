@@ -11,7 +11,6 @@ DisparityMap::DisparityMap(Mat image): m_image(image){}
 DisparityMap
 DisparityMap::generateDisparityMap(Mat left, Mat right)
 {
-
     StereoSGBM sgbm;
     sgbm.SADWindowSize = 7;
     sgbm.numberOfDisparities = 256; //  The greater, the less susceptible to noise, and less details
