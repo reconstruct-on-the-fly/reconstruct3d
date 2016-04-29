@@ -2,14 +2,18 @@
 #define IMAGE_PAIR_H
 
 #include <opencv2/core/core.hpp>
-#include "camera.h" 
+#include "camera.h"
 
 class ImagePair{
 
 public:
     ImagePair(cv::Mat img1, cv::Mat img2, cv::Mat R, cv::Vec<double, 3> T);
     ImagePair(cv::Mat img1, cv::Mat img2);
+
     ImagePair rectify(Camera camera, cv::Mat &Q);
+
+    cv::Mat getImage1();
+    cv::Mat getImage2();
 
 private:
     cv::Mat m_img1, m_img2;
