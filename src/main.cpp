@@ -5,6 +5,8 @@
 
 #include "camera.h"
 #include "image_pair.h"
+#include "disparity_map.h"
+#include "depth_map.h"
 
 
 using namespace cv;
@@ -48,20 +50,25 @@ int main(int argc, char** argv)
     Camera camera = Camera::createFromFile(calibration_file);
 
     /* Image Rectification */
-    Mat R = Mat_<double>(3,3,0.0);
+    Mat R = Mat::eye(3, 3, CV_64F);
     Mat Q;
     Vec<double, 3> T;
-    T[0] = 0; T[1] = 0; T[2] = 0;
+    T[0] = 0; T[1] = 1; T[2] = 0;
 
     ImagePair imagePair(image1, image2, R, T);
     ImagePair newImagePair = imagePair.rectify(camera, Q);
+
+    /* Disparity Map */
+    DisparityMap disparityMap = DisparityMap::generateDisparityMap(imagePair);
+
+    /* Depth Map */
+    DepthMap depthMap = DepthMap::generateDepthMap(disparityMap, Q);
 
     /* Open Window */
     string window_title = "Display Window";
 
     namedWindow(window_title, WINDOW_NORMAL);
-    imshow(window_title, newImagePair.getImage1());
-    imshow(window_title + "1", newImagePair.getImage2());
+    imshow(window_title, depthMap.getImage());
     waitKey(0);
 
     return EXIT_SUCCESS;

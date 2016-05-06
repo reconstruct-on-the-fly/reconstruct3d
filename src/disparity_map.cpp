@@ -30,6 +30,13 @@ DisparityMap::generateDisparityMap(Mat left, Mat right)
     return DisparityMap(disparity);
 }
 
+DisparityMap
+DisparityMap::generateDisparityMap(ImagePair imagePair)
+{
+    return DisparityMap::generateDisparityMap(imagePair.getImage1(),
+                                              imagePair.getImage2());
+}
+
 Mat
 DisparityMap::getImage()
 {

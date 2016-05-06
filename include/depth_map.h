@@ -2,6 +2,7 @@
 #define DEPTH_MAP_H
 
 #include <opencv2/core/core.hpp>
+#include "disparity_map.h"
 
 class DepthMap {
 
@@ -9,8 +10,8 @@ public:
     DepthMap();
     DepthMap(cv::Mat image);
 
-    static DepthMap generateDepthMap(cv::InputArray disparity,
-                                     cv::InputArray Q,
+    static DepthMap generateDepthMap(DisparityMap disparity,
+                                     cv::Mat Q,
                                      bool handleMissingValues=false,
                                      int ddepth=-1);
 
