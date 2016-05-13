@@ -12,7 +12,7 @@ public:
 
     static DepthMap generateDepthMap(DisparityMap disparity,
                                      cv::Mat Q,
-                                     bool handleMissingValues=false,
+                                     bool handleMissingValues=true,
                                      int ddepth=-1);
 
     cv::Mat getImage();

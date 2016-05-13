@@ -53,22 +53,23 @@ int main(int argc, char** argv)
     Mat R = Mat::eye(3, 3, CV_64F);
     Mat Q;
     Vec<double, 3> T;
-    T[0] = 0; T[1] = 1; T[2] = 0;
+    T[0] = 0; T[1] = 3; T[2] = 0;
 
     ImagePair imagePair(image1, image2, R, T);
     ImagePair newImagePair = imagePair.rectify(camera, Q);
 
     /* Disparity Map */
     DisparityMap disparityMap = DisparityMap::generateDisparityMap(imagePair);
+    Mat disp8;
+    normalize(disparityMap.getImage(), disp8, 0, 255, CV_MINMAX, CV_8U);
+    //disparityMap.getImage().convertTo(disp8, CV_8U, 255/(256*16.));
 
     /* Depth Map */
     DepthMap depthMap = DepthMap::generateDepthMap(disparityMap, Q);
 
     /* Open Window */
-    string window_title = "Display Window";
-
-    namedWindow(window_title, WINDOW_NORMAL);
-    imshow(window_title, depthMap.getImage());
+    imwrite( "diparity_map.jpg", disp8 );
+    imwrite( "depth_map.jpg", depthMap.getImage() );
     waitKey(0);
 
     return EXIT_SUCCESS;
