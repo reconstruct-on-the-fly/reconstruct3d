@@ -60,17 +60,13 @@ int main(int argc, char** argv)
 
     /* Disparity Map */
     DisparityMap disparityMap = DisparityMap::generateDisparityMap(imagePair);
-    Mat disp8;
-    normalize(disparityMap.getImage(), disp8, 0, 255, CV_MINMAX, CV_8U);
-    //disparityMap.getImage().convertTo(disp8, CV_8U, 255/(256*16.));
 
     /* Depth Map */
     DepthMap depthMap = DepthMap::generateDepthMap(disparityMap, Q);
 
-    /* Open Window */
-    imwrite( "diparity_map.jpg", disp8 );
-    imwrite( "depth_map.jpg", depthMap.getImage() );
-    waitKey(0);
+    /* Save Results */
+    imwrite("diparity_map.jpg", disparityMap.getImage());
+    imwrite("depth_map.jpg", depthMap.getImage());
 
     return EXIT_SUCCESS;
 }

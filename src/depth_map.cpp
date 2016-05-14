@@ -15,19 +15,12 @@ DepthMap::DepthMap() {}
 
 DepthMap::DepthMap(Mat image): m_image(image) {}
 
-template <typename T>
-inline T interpolate(const T v, const T a0, const T b0, const T a1, const T b1)
-{
-    return (((v - a0) * (b1 - a1)) / (b0 - a0)) + a1;
-}
-
 DepthMap
-DepthMap::generateDepthMap(DisparityMap disparity, cv::Mat Q,
-                           bool handleMissingValues, int ddepth)
+DepthMap::generateDepthMap(DisparityMap disparity, cv::Mat Q)
 {
     cv::Mat_<float> Qf = Q;
     cv::Mat_<float> disparity32F = disparity.getImage();
-    cv::Mat_<cv::Vec3f> XYZ(disparity32F.rows,disparity32F.cols);   // Output point cloud
+    cv::Mat_<cv::Vec3f> XYZ(disparity32F.rows,disparity32F.cols);  // Output point cloud
     cv::Mat_<float> Z(disparity32F.rows,disparity32F.cols);
     cv::Mat_<float> vec_tmp(4,1);
     for(int y=0; y<disparity32F.rows; ++y) {
@@ -39,7 +32,7 @@ DepthMap::generateDepthMap(DisparityMap disparity, cv::Mat Q,
             point[0] = vec_tmp(0);
             point[1] = vec_tmp(1);
             point[2] = vec_tmp(2);
-            Z.at<float>(y, x) = vec_tmp(2);
+            Z.at<float>(y, x) = vec_tmp(1);
         }
     }
 

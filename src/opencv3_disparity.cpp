@@ -62,14 +62,14 @@ int main(int argc, char **argv)
     Mat raw_disp_vis;
     getDisparityVis(left_disp, raw_disp_vis, vis_mult);
     namedWindow("raw disparity", WINDOW_AUTOSIZE);
-    imshow("raw disparity", raw_disp_vis);
+    // imshow("raw disparity", raw_disp_vis);
     imwrite("/vagrant/disp_vis.jpg", raw_disp_vis);
     waitKey();
 
     Mat filtered_disp_vis;
     getDisparityVis(filtered_disp, filtered_disp_vis, vis_mult);
     namedWindow("filtered disparity", WINDOW_AUTOSIZE);
-    imshow("filtered disparity", filtered_disp_vis);
+    // imshow("filtered disparity", filtered_disp_vis);
     imwrite("/vagrant/filtered_disp_vis.jpg", filtered_disp_vis);
     waitKey();
 

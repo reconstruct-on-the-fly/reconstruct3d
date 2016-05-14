@@ -1,69 +1,79 @@
 #include "disparity_map.h"
-#include <opencv2/core/core.hpp>
-#include <opencv2/calib3d/calib3d.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/ximgproc/disparity_filter.hpp>
 
-#include <iostream>
-using namespace std;
 using namespace cv;
+using namespace cv::ximgproc;
 
 DisparityMap::DisparityMap(){}
 
 DisparityMap::DisparityMap(Mat image): m_image(image){}
 
 DisparityMap
-DisparityMap::generateDisparityMap(Mat left, Mat right)
+DisparityMap::generateDisparityMap(Mat left, Mat right, bool gray_filter,
+                                   bool no_filter)
 {
-    auto n_channels = left.channels();
-    cout << n_channels << endl;
+    // Convert images to gray scale
+    if(gray_filter)
+    {
+        cvtColor(left,  left,  COLOR_BGR2GRAY);
+        cvtColor(right, right, COLOR_BGR2GRAY);
+    }
 
-    StereoSGBM sgbm;
-    sgbm.minDisparity = 0;
-    sgbm.numberOfDisparities = 512; // [Must be divisible by 16] CHECK
-    sgbm.SADWindowSize = 3;  // [Odd number between 3..11] CHECK
-    sgbm.P1 =  1*n_channels*sgbm.SADWindowSize*sgbm.SADWindowSize;
-    sgbm.P2 = 100*n_channels*sgbm.SADWindowSize*sgbm.SADWindowSize; // [P2 > P1]
-    sgbm.disp12MaxDiff = 100;
-    sgbm.preFilterCap = 63;
-    sgbm.uniquenessRatio = 10; // [5..15]
-    sgbm.speckleWindowSize = 100; // [50..200]
-    sgbm.speckleRange = 32; // [1..2] CHECK = 32
-    sgbm.fullDP = false;
+    // Creatring SGBM matchers
+    int max_disp = 160;
+    int wsize = 3;
 
-    //Mat l1, r1;
-    //cvtColor(left, l1, CV_BGR2GRAY);
-    //cvtColor(right, r1, CV_BGR2GRAY);
+    Ptr<StereoSGBM> left_matcher = StereoSGBM::create(0, max_disp, wsize);
+    left_matcher->setP1(1*wsize*wsize);
+    left_matcher->setP2(96*wsize*wsize);
+    left_matcher->setPreFilterCap(63);
+    left_matcher->setUniquenessRatio(10);
+    left_matcher->setSpeckleWindowSize(100);
+    left_matcher->setSpeckleRange(32);
+    left_matcher->setMode(StereoSGBM::MODE_SGBM_3WAY);
+
+    Ptr<StereoMatcher> right_matcher = createRightMatcher(left_matcher);
+
+    // Compute Disparity Map
+    Mat left_disparity, right_disparity;
+
+    left_matcher->compute( left, right, left_disparity);
+    right_matcher->compute(right, left, right_disparity);
+
     Mat disparity;
-    //sgbm(l1, r1, disparity);
-    sgbm(left, right, disparity);
+    double vis_mult = 1.0;  // To scale disparity map visualization
 
-    //Mat disparity;
+    if(no_filter)
+        getDisparityVis(left_disparity, disparity, vis_mult);
+    else
+    {
+        // WLS Filter
+        Ptr<DisparityWLSFilter> wls_filter;
+        wls_filter = createDisparityWLSFilter(left_matcher);
 
-    //StereoBM bm;
-    //bm.state->preFilterCap = 31;
-    //bm.state->SADWindowSize = 9;
-    //bm.state->minDisparity = 0;
-    //bm.state->numberOfDisparities = 256;
-    //bm.state->textureThreshold = 10;
-    //bm.state->uniquenessRatio = 15;
-    //bm.state->speckleWindowSize = 100;
-    //bm.state->speckleRange = 32;
-    //bm.state->disp12MaxDiff = 1;
+        double lambda = 8000.0;
+        double sigma  = 1.5;
+        wls_filter->setLambda(lambda);
+        wls_filter->setSigmaColor(sigma);
 
-    //Mat l1, r1;
-    //cvtColor(left, l1, CV_BGR2GRAY);
-    //cvtColor(right, r1, CV_BGR2GRAY);
+        Mat filtered_disparity;
+        wls_filter->filter(left_disparity, left, filtered_disparity,
+                           right_disparity);
 
-    //bm(l1, r1, disparity);
+        getDisparityVis(filtered_disparity, disparity, vis_mult);
+    }
 
     return DisparityMap(disparity);
 }
 
 DisparityMap
-DisparityMap::generateDisparityMap(ImagePair imagePair)
+DisparityMap::generateDisparityMap(ImagePair imagePair, bool gray_filter,
+                                   bool no_filter)
 {
     return DisparityMap::generateDisparityMap(imagePair.getImage1(),
-                                              imagePair.getImage2());
+                                              imagePair.getImage2(),
+                                              gray_filter, no_filter);
 }
 
 Mat

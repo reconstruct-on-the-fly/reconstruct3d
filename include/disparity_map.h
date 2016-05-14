@@ -10,8 +10,12 @@ public:
     DisparityMap();
     DisparityMap(cv::Mat image);
 
-    static DisparityMap generateDisparityMap(cv::Mat left, cv::Mat right);
-    static DisparityMap generateDisparityMap(ImagePair imagePair);
+    static DisparityMap generateDisparityMap(cv::Mat left, cv::Mat right,
+                                             bool gray_filter=true,
+                                             bool no_filter=false);
+    static DisparityMap generateDisparityMap(ImagePair imagePair,
+                                             bool gray_filter=true,
+                                             bool no_filter=false);
 
     cv::Mat getImage();
 
