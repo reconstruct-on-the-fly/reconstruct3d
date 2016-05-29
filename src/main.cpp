@@ -58,15 +58,18 @@ int main(int argc, char** argv)
     ImagePair imagePair(image1, image2, R, T);
     ImagePair newImagePair = imagePair.rectify(camera, Q);
 
+    imwrite("/vagrant/rectified_image1.jpg", newImagePair.getImage1());
+    imwrite("/vagrant/rectified_image2.jpg", newImagePair.getImage2());
+
     /* Disparity Map */
-    DisparityMap disparityMap = DisparityMap::generateDisparityMap(imagePair);
+    DisparityMap disparityMap = DisparityMap::generateDisparityMap(newImagePair);
 
     /* Depth Map */
     DepthMap depthMap = DepthMap::generateDepthMap(disparityMap, Q);
 
     /* Save Results */
-    imwrite("diparity_map.jpg", disparityMap.getImage());
-    imwrite("depth_map.jpg", depthMap.getImage());
+    imwrite("/vagrant/diparity_map.jpg", disparityMap.getImage());
+    imwrite("/vagrant/depth_map.jpg", depthMap.getImage());
 
     return EXIT_SUCCESS;
 }

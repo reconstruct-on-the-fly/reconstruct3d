@@ -17,11 +17,12 @@ ImagePair
 ImagePair::rectify(Camera camera, Mat &Q)
 {
     Mat R1, R2, P1, P2;
+    Rect roi1, roi2;
 
     stereoRectify(camera.getCameraMatrix(), camera.getDistortionCoefs(),
         camera.getCameraMatrix(), camera.getDistortionCoefs(), m_img1.size(),
         m_R, m_T, R1, R2, P1, P2, Q,
-        CALIB_ZERO_DISPARITY, 1, m_img1.size());
+        CALIB_ZERO_DISPARITY, 1, m_img1.size(), &roi1, &roi2);
 
     Mat rmap1, rmap2, rmap3, rmap4;
 
@@ -37,7 +38,7 @@ ImagePair::rectify(Camera camera, Mat &Q)
     remap(m_img1, r_img1, rmap1, rmap2, INTER_LINEAR);
     remap(m_img2, r_img2, rmap3, rmap4, INTER_LINEAR);
 
-    return ImagePair(r_img1, r_img2);
+    return ImagePair(r_img1(roi1), r_img2(roi2));
 }
 
 cv::Mat

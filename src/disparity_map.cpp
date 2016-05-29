@@ -18,19 +18,22 @@ DisparityMap::generateDisparityMap(Mat left, Mat right, bool gray_filter,
     {
         cvtColor(left,  left,  COLOR_BGR2GRAY);
         cvtColor(right, right, COLOR_BGR2GRAY);
+        equalizeHist(left, left);
+        equalizeHist(right, right);
     }
 
     // Creatring SGBM matchers
-    int max_disp = 160;
+    int max_disp = 16;
     int wsize = 3;
 
     Ptr<StereoSGBM> left_matcher = StereoSGBM::create(0, max_disp, wsize);
-    left_matcher->setP1(1*wsize*wsize);
-    left_matcher->setP2(96*wsize*wsize);
+    left_matcher->setP1(8*wsize*wsize);
+    left_matcher->setP2(32*wsize*wsize);;
     left_matcher->setPreFilterCap(63);
     left_matcher->setUniquenessRatio(10);
     left_matcher->setSpeckleWindowSize(100);
     left_matcher->setSpeckleRange(32);
+    left_matcher->setBlockSize(wsize);
     left_matcher->setMode(StereoSGBM::MODE_SGBM_3WAY);
 
     Ptr<StereoMatcher> right_matcher = createRightMatcher(left_matcher);
