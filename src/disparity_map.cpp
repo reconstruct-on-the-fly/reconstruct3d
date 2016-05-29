@@ -1,7 +1,10 @@
 #include "disparity_map.h"
 #include <opencv2/imgproc.hpp>
 #include <opencv2/ximgproc/disparity_filter.hpp>
+#include <limits>
+#include <iostream>
 
+using namespace std;
 using namespace cv;
 using namespace cv::ximgproc;
 
@@ -13,58 +16,52 @@ DisparityMap
 DisparityMap::generateDisparityMap(Mat left, Mat right, bool gray_filter,
                                    bool no_filter)
 {
-    // Convert images to gray scale
+    // Custom Params
+    int min_disp = 0, max_disp = 16;
+    int window_size = 3;
+    int half_window_size = (window_size - 1) / 2;
+
+    /* Disparity Algorithm */
+    const int rows = left.rows;
+    const int cols = left.cols * left.channels();
+
+    Mat disparity = left.clone();
+
     if(gray_filter)
     {
-        cvtColor(left,  left,  COLOR_BGR2GRAY);
+        cvtColor(left, left, COLOR_BGR2GRAY);
         cvtColor(right, right, COLOR_BGR2GRAY);
-        equalizeHist(left, left);
-        equalizeHist(right, right);
     }
 
-    // Creatring SGBM matchers
-    int max_disp = 16;
-    int wsize = 3;
-
-    Ptr<StereoSGBM> left_matcher = StereoSGBM::create(0, max_disp, wsize);
-    left_matcher->setP1(8*wsize*wsize);
-    left_matcher->setP2(32*wsize*wsize);;
-    left_matcher->setPreFilterCap(63);
-    left_matcher->setUniquenessRatio(10);
-    left_matcher->setSpeckleWindowSize(100);
-    left_matcher->setSpeckleRange(32);
-    left_matcher->setBlockSize(wsize);
-    left_matcher->setMode(StereoSGBM::MODE_SGBM_3WAY);
-
-    Ptr<StereoMatcher> right_matcher = createRightMatcher(left_matcher);
-
-    // Compute Disparity Map
-    Mat left_disparity, right_disparity;
-
-    left_matcher->compute( left, right, left_disparity);
-    right_matcher->compute(right, left, right_disparity);
-
-    Mat disparity;
-    double vis_mult = 1.0;  // To scale disparity map visualization
-
-    if(no_filter)
-        getDisparityVis(left_disparity, disparity, vis_mult);
-    else
+    for(int i = half_window_size; i < rows - half_window_size; ++i)
     {
-        // WLS Filter
-        Ptr<DisparityWLSFilter> wls_filter;
-        wls_filter = createDisparityWLSFilter(left_matcher);
+        for(int j = half_window_size; j < cols - half_window_size; ++j)
+        {
+            int min_sad = numeric_limits<int>::max();
+            int best_disp = 0;
 
-        double lambda = 8000.0;
-        double sigma  = 1.5;
-        wls_filter->setLambda(lambda);
-        wls_filter->setSigmaColor(sigma);
+            for(int disp = min_disp; disp <= max_disp; ++disp)
+            {
+                 int sad = 0;
+                 for(int ii = -half_window_size; ii < half_window_size; ++ii)
+                 {
+                     for(int jj = -half_window_size; jj < half_window_size; ++jj)
+                     {
+                         sad += abs(left.at<uchar>(i + ii, j + jj) -
+                                    right.at<uchar>(i + ii, j + jj + disp));
+                     }
+                 }
 
-        Mat filtered_disparity;
-        wls_filter->filter(left_disparity, left, filtered_disparity,
-                           right_disparity);
+                 if(sad < min_sad)
+                 {
+                     min_sad = sad;
+                     best_disp = disp;
+                 }
+            }
 
-        getDisparityVis(filtered_disparity, disparity, vis_mult);
+            int mapped_disp = (255 / max_disp) * best_disp; 
+            disparity.at<uchar>(i, j) = mapped_disp;
+        }
     }
 
     return DisparityMap(disparity);
