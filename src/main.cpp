@@ -2,6 +2,7 @@
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc.hpp>
 
 #include "camera.h"
 #include "image_pair.h"
@@ -48,28 +49,33 @@ int main(int argc, char** argv)
 
     /* Camera Creation */
     Camera camera = Camera::createFromFile(calibration_file);
-
-    /* Image Rectification */
+//
+//    /* Image Rectification */
     Mat R = Mat::eye(3, 3, CV_64F);
     Mat Q;
     Vec<double, 3> T;
     T[0] = 0; T[1] = 3; T[2] = 0;
-
+//
     ImagePair imagePair(image1, image2, R, T);
     ImagePair newImagePair = imagePair.rectify(camera, Q);
-
-    imwrite("/vagrant/rectified_image1.jpg", newImagePair.getImage1());
-    imwrite("/vagrant/rectified_image2.jpg", newImagePair.getImage2());
+//
+//    imwrite("/vagrant/rectified_image1.jpg", newImagePair.getImage1());
+//    imwrite("/vagrant/rectified_image2.jpg", newImagePair.getImage2());
+//    cout << 1 << endl;
 
     /* Disparity Map */
     DisparityMap disparityMap = DisparityMap::generateDisparityMap(newImagePair);
 
     /* Depth Map */
-    DepthMap depthMap = DepthMap::generateDepthMap(disparityMap, Q);
+    //DepthMap depthMap = DepthMap::generateDepthMap(disparityMap, Q);
+
+    Mat disp_color;
+    applyColorMap(disparityMap.getImage(), disp_color, COLORMAP_JET);
 
     /* Save Results */
     imwrite("/vagrant/diparity_map.jpg", disparityMap.getImage());
-    imwrite("/vagrant/depth_map.jpg", depthMap.getImage());
+    imwrite("/vagrant/color_diparity_map.jpg", disp_color);
+    //imwrite("/vagrant/depth_map.jpg", depthMap.getImage());
 
     return EXIT_SUCCESS;
 }
