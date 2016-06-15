@@ -1,5 +1,6 @@
 #include "disparity_map.h"
 #include <opencv2/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
 #include <opencv2/ximgproc/disparity_filter.hpp>
 #include <limits>
 #include <iostream>
@@ -17,7 +18,7 @@ DisparityMap::generateDisparityMap(Mat left, Mat right, bool gray_filter,
                                    bool no_filter)
 {
     // Custom Params
-    int min_disp = 0, max_disp = 224;
+    int min_disp = 0, max_disp = 160;
     int window_size = 3;
     int half_window_size = (window_size - 1) / 2;
 
@@ -25,6 +26,10 @@ DisparityMap::generateDisparityMap(Mat left, Mat right, bool gray_filter,
     {
         cvtColor(left, left, COLOR_BGR2GRAY);
         cvtColor(right, right, COLOR_BGR2GRAY);
+
+        Ptr<CLAHE> clahe = createCLAHE(1, Size(2, 2));
+        clahe->apply(left, left);
+        clahe->apply(right, right);
     }
 
     /* Disparity Algorithm */
@@ -35,7 +40,7 @@ DisparityMap::generateDisparityMap(Mat left, Mat right, bool gray_filter,
 
     for(int i = half_window_size; i < rows - half_window_size; ++i)
     {
-        for(int j = half_window_size; j < cols - half_window_size - max_disp+1; ++j)
+        for(int j = half_window_size; j < cols - half_window_size; ++j)
         {
             int min_sad = numeric_limits<int>::max();
             int best_disp = 0;
@@ -64,6 +69,7 @@ DisparityMap::generateDisparityMap(Mat left, Mat right, bool gray_filter,
         }
     }
 
+//    no_filter = true;
     if(!no_filter)
     {
         double lambda = 8000.0;

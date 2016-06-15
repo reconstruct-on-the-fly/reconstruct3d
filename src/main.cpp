@@ -59,15 +59,15 @@ int main(int argc, char** argv)
     ImagePair imagePair(image1, image2, R, T);
     ImagePair newImagePair = imagePair.rectify(camera, Q);
 //
-//    imwrite("/vagrant/rectified_image1.jpg", newImagePair.getImage1());
-//    imwrite("/vagrant/rectified_image2.jpg", newImagePair.getImage2());
+    imwrite("/vagrant/rectified_image1.jpg", newImagePair.getImage1());
+    imwrite("/vagrant/rectified_image2.jpg", newImagePair.getImage2());
 //    cout << 1 << endl;
 
     /* Disparity Map */
-    DisparityMap disparityMap = DisparityMap::generateDisparityMap(newImagePair);
+    DisparityMap disparityMap = DisparityMap::generateDisparityMap(imagePair);
 
     /* Depth Map */
-    //DepthMap depthMap = DepthMap::generateDepthMap(disparityMap, Q);
+    DepthMap depthMap = DepthMap::generateDepthMap(disparityMap, Q);
 
     Mat disp_color;
     applyColorMap(disparityMap.getImage(), disp_color, COLORMAP_JET);
@@ -75,7 +75,7 @@ int main(int argc, char** argv)
     /* Save Results */
     imwrite("/vagrant/diparity_map.jpg", disparityMap.getImage());
     imwrite("/vagrant/color_diparity_map.jpg", disp_color);
-    //imwrite("/vagrant/depth_map.jpg", depthMap.getImage());
+    imwrite("/vagrant/depth_map.jpg", depthMap.getImage());
 
     return EXIT_SUCCESS;
 }
