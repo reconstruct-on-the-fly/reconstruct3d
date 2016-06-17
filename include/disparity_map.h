@@ -11,11 +11,12 @@ public:
     DisparityMap(cv::Mat image);
 
     static DisparityMap generateDisparityMap(cv::Mat left, cv::Mat right,
-                                             bool gray_filter=true,
                                              bool no_filter=false);
     static DisparityMap generateDisparityMap(ImagePair imagePair,
-                                             bool gray_filter=true,
                                              bool no_filter=false);
+    static void preprocessImages(cv::Mat &left, cv::Mat &right);
+    static int sadAt(int i, int j, cv::Mat left, cv::Mat right,
+                     int window_size, int offset);
 
     cv::Mat getImage();
 

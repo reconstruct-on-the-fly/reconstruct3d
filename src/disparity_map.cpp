@@ -13,55 +13,82 @@ DisparityMap::DisparityMap(){}
 
 DisparityMap::DisparityMap(Mat image): m_image(image){}
 
+void
+DisparityMap::preprocessImages(Mat &left, Mat &right)
+{
+    cvtColor(left, left, COLOR_BGR2GRAY);
+    cvtColor(right, right, COLOR_BGR2GRAY);
+
+    Ptr<CLAHE> clahe = createCLAHE(1, Size(2, 2));
+    clahe->apply(left, left);
+    clahe->apply(right, right);
+}
+
+int
+DisparityMap::sadAt(int i, int j, Mat left, Mat right, int window_size,
+                    int offset)
+{
+    int half_window_size = (window_size - 1) / 2;
+    int sad = 0;
+    for(int ii = -half_window_size; ii < half_window_size; ++ii)
+    {
+        for(int jj = -half_window_size; jj < half_window_size; ++jj)
+        {
+            sad += abs(left.at<uchar>(i + ii, j + jj) -
+                       right.at<uchar>(i + ii, j + jj + offset));
+        }
+    }
+
+    return sad;
+}
+
 DisparityMap
-DisparityMap::generateDisparityMap(Mat left, Mat right, bool gray_filter,
-                                   bool no_filter)
+DisparityMap::generateDisparityMap(Mat left, Mat right, bool no_filter)
 {
     // Custom Params
-    int min_disp = 0, max_disp = 160;
+    int min_disp = -224, max_disp = 224;
     int window_size = 3;
     int half_window_size = (window_size - 1) / 2;
+    int T = 10;
 
-    if(gray_filter)
-    {
-        cvtColor(left, left, COLOR_BGR2GRAY);
-        cvtColor(right, right, COLOR_BGR2GRAY);
-
-        Ptr<CLAHE> clahe = createCLAHE(1, Size(2, 2));
-        clahe->apply(left, left);
-        clahe->apply(right, right);
-    }
+    DisparityMap::preprocessImages(left, right);
 
     /* Disparity Algorithm */
     const int rows = left.rows;
     const int cols = left.cols * left.channels();
 
     Mat disparity = left.clone();
+    int best_disp = 0;
 
     for(int i = half_window_size; i < rows - half_window_size; ++i)
     {
         for(int j = half_window_size; j < cols - half_window_size; ++j)
         {
             int min_sad = numeric_limits<int>::max();
-            int best_disp = 0;
+            int new_sad = DisparityMap::sadAt(i, j, left, left,
+                                              window_size, -window_size);
+
+            if (new_sad > T)
+            {
+                min_sad = numeric_limits<int>::max();
+            }
+            else
+            {
+                int mapped_disp = (255 / max_disp) * best_disp;
+                disparity.at<uchar>(i, j) = mapped_disp;
+                continue;
+            }
 
             for(int disp = min_disp; disp <= max_disp; ++disp)
             {
-                 int sad = 0;
-                 for(int ii = -half_window_size; ii < half_window_size; ++ii)
-                 {
-                     for(int jj = -half_window_size; jj < half_window_size; ++jj)
-                     {
-                         sad += abs(left.at<uchar>(i + ii, j + jj) -
-                                    right.at<uchar>(i + ii, j + jj + disp));
-                     }
-                 }
+                int sad = DisparityMap::sadAt(i, j, left, right,
+                                              window_size, disp);
 
-                 if(sad < min_sad)
-                 {
-                     min_sad = sad;
-                     best_disp = disp;
-                 }
+                if(sad < min_sad)
+                {
+                    min_sad = sad;
+                    best_disp = abs(disp);
+                }
             }
 
             int mapped_disp = (255 / max_disp) * best_disp; 
@@ -69,7 +96,7 @@ DisparityMap::generateDisparityMap(Mat left, Mat right, bool gray_filter,
         }
     }
 
-//    no_filter = true;
+    no_filter = true;
     if(!no_filter)
     {
         double lambda = 8000.0;
@@ -90,12 +117,11 @@ DisparityMap::generateDisparityMap(Mat left, Mat right, bool gray_filter,
 }
 
 DisparityMap
-DisparityMap::generateDisparityMap(ImagePair imagePair, bool gray_filter,
-                                   bool no_filter)
+DisparityMap::generateDisparityMap(ImagePair imagePair, bool no_filter)
 {
     return DisparityMap::generateDisparityMap(imagePair.getImage1(),
                                               imagePair.getImage2(),
-                                              gray_filter, no_filter);
+                                              no_filter);
 }
 
 Mat
