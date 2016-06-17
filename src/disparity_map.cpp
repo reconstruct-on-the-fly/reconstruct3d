@@ -20,8 +20,11 @@ DisparityMap::preprocessImages(Mat &left, Mat &right)
     cvtColor(right, right, COLOR_BGR2GRAY);
 
     Ptr<CLAHE> clahe = createCLAHE(1, Size(2, 2));
-    clahe->apply(left, left);
-    clahe->apply(right, right);
+    //clahe->apply(left, left);
+    //clahe->apply(right, right);
+    //GaussianBlur(left, left, Size(3, 3), 0);
+    //GaussianBlur(right, right, Size(3, 3), 0);
+    //imwrite("/vagrant/left_blur.jpg", left);
 }
 
 int
@@ -46,10 +49,12 @@ DisparityMap
 DisparityMap::generateDisparityMap(Mat left, Mat right, bool no_filter)
 {
     // Custom Params
-    int min_disp = -224, max_disp = 224;
-    int window_size = 3;
+    int min_disp = 0, max_disp = 160;
+    int norm_disp = abs(min_disp) + abs(max_disp);
+    int window_size = 5;
     int half_window_size = (window_size - 1) / 2;
-    int T = 10;
+    int T = 0;
+    int T2 = 100;
 
     DisparityMap::preprocessImages(left, right);
 
@@ -62,11 +67,12 @@ DisparityMap::generateDisparityMap(Mat left, Mat right, bool no_filter)
 
     for(int i = half_window_size; i < rows - half_window_size; ++i)
     {
+        int min_sad = numeric_limits<int>::max();
+
         for(int j = half_window_size; j < cols - half_window_size; ++j)
         {
-            int min_sad = numeric_limits<int>::max();
             int new_sad = DisparityMap::sadAt(i, j, left, left,
-                                              window_size, -window_size);
+                                              window_size, +window_size);
 
             if (new_sad > T)
             {
@@ -74,12 +80,12 @@ DisparityMap::generateDisparityMap(Mat left, Mat right, bool no_filter)
             }
             else
             {
-                int mapped_disp = (255 / max_disp) * best_disp;
+                int mapped_disp = (255 / norm_disp) * best_disp;
                 disparity.at<uchar>(i, j) = mapped_disp;
                 continue;
             }
 
-            for(int disp = min_disp; disp <= max_disp; ++disp)
+            for(int disp = min_disp; disp >= -max_disp; --disp)
             {
                 int sad = DisparityMap::sadAt(i, j, left, right,
                                               window_size, disp);
@@ -91,16 +97,23 @@ DisparityMap::generateDisparityMap(Mat left, Mat right, bool no_filter)
                 }
             }
 
-            int mapped_disp = (255 / max_disp) * best_disp; 
-            disparity.at<uchar>(i, j) = mapped_disp;
+            if (min_sad < T2)
+            {
+                int mapped_disp = (255 / norm_disp) * best_disp;
+                disparity.at<uchar>(i, j) = mapped_disp;
+            }
+            else
+            {
+                disparity.at<uchar>(i, j) = 0;
+            }
         }
     }
 
-    no_filter = true;
+//    no_filter = true;
     if(!no_filter)
     {
-        double lambda = 8000.0;
-        double sigma  = 1.5;
+        double lambda = 16000.0;
+        double sigma  = 2;
 
         Ptr<DisparityWLSFilter> wls_filter;
         wls_filter = createDisparityWLSFilterGeneric(false);
