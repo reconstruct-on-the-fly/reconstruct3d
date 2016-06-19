@@ -2,6 +2,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/ximgproc/disparity_filter.hpp>
+#include <opencv2/ximgproc/edge_filter.hpp>
 #include <limits>
 #include <iostream>
 
@@ -108,6 +109,11 @@ DisparityMap::generateDisparityMap(Mat left, Mat right, bool no_filter)
             }
         }
     }
+    
+//    Mat grad_x, abs_grad_x;
+//    Sobel( left, grad_x, CV_16S, 1, 0, 3, 1, 0, BORDER_DEFAULT );
+//    convertScaleAbs( grad_x, abs_grad_x );
+//    addWeighted( abs_grad_x, 1, disparity, 1, 0, disparity );
 
 //    no_filter = true;
     if(!no_filter)
@@ -124,6 +130,11 @@ DisparityMap::generateDisparityMap(Mat left, Mat right, bool no_filter)
         disparity.convertTo(disparity, CV_16S);
         wls_filter->filter(disparity, left, filtered_disp);
         getDisparityVis(filtered_disp, disparity, 16.0);
+
+//        getDisparityVis(disparity, disparity, vis_mult);
+//        cout << left.depth() << endl;
+//        cout << disparity.depth() << endl;
+//        jointBilateralFilter(left, disparity, disparity, 10, 100, 10);
     }
 
     return DisparityMap(disparity);
