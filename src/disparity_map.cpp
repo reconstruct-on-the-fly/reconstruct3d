@@ -3,6 +3,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/ximgproc/disparity_filter.hpp>
 #include <opencv2/ximgproc/edge_filter.hpp>
+#include "opencv2/stitching.hpp"
 #include <limits>
 #include <iostream>
 
@@ -70,7 +71,7 @@ DisparityMap::generateDisparityMap(Mat left, Mat right, bool no_filter)
     {
         int min_sad = numeric_limits<int>::max();
 
-        for(int j = half_window_size; j < cols - half_window_size; ++j)
+        for(int j = half_window_size + max_disp; j < cols - half_window_size; ++j)
         {
             int new_sad = DisparityMap::sadAt(i, j, left, left,
                                               window_size, +window_size);
@@ -81,12 +82,12 @@ DisparityMap::generateDisparityMap(Mat left, Mat right, bool no_filter)
             }
             else
             {
-                int mapped_disp = (255 / norm_disp) * best_disp;
+                int mapped_disp = (255.0 / norm_disp) * best_disp;
                 disparity.at<uchar>(i, j) = mapped_disp;
                 continue;
             }
 
-            for(int disp = min_disp; disp >= -max_disp; --disp)
+            for(int disp = min_disp; (disp >= -max_disp) ; --disp)
             {
                 int sad = DisparityMap::sadAt(i, j, left, right,
                                               window_size, disp);
@@ -100,7 +101,7 @@ DisparityMap::generateDisparityMap(Mat left, Mat right, bool no_filter)
 
             if (min_sad < T2)
             {
-                int mapped_disp = (255 / norm_disp) * best_disp;
+                int mapped_disp = (255.0 / norm_disp) * best_disp;
                 disparity.at<uchar>(i, j) = mapped_disp;
             }
             else
@@ -115,7 +116,7 @@ DisparityMap::generateDisparityMap(Mat left, Mat right, bool no_filter)
 //    convertScaleAbs( grad_x, abs_grad_x );
 //    addWeighted( abs_grad_x, 1, disparity, 1, 0, disparity );
 
-//    no_filter = true;
+    //no_filter = true;
     if(!no_filter)
     {
         double lambda = 16000.0;
@@ -137,7 +138,8 @@ DisparityMap::generateDisparityMap(Mat left, Mat right, bool no_filter)
 //        jointBilateralFilter(left, disparity, disparity, 10, 100, 10);
     }
 
-    return DisparityMap(disparity);
+    Rect roi(max_disp, 0, cols - max_disp, rows);
+    return DisparityMap(disparity(roi));
 }
 
 DisparityMap
@@ -152,4 +154,20 @@ Mat
 DisparityMap::getImage()
 {
     return m_image;
+}
+
+DisparityMap
+DisparityMap::merge(vector<Mat> maps)
+{
+    Mat merged_maps;
+
+    Stitcher stitcher = Stitcher::createDefault();
+    Stitcher::Status status = stitcher.stitch(maps, merged_maps);
+
+    if (status != Stitcher::OK)
+    {
+        cout << "error found while stitching: " << status << endl;
+    }
+
+    return DisparityMap(merged_maps);
 }
