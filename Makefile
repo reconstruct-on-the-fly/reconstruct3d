@@ -1,8 +1,8 @@
 CC=g++
-CFLAGS=-Wall -W -pedantic -ansi -std=c++11
+CFLAGS=-g -Wall -W -pedantic -ansi -std=c++11
 
 INCLUDEDIR=include
-LDFLAGS=-I$(INCLUDEDIR) `pkg-config --cflags --libs opencv`
+LDFLAGS=-I$(INCLUDEDIR) -I3rd_party/Fast-Quadric-Mesh-Simplification `pkg-config --cflags --libs opencv`
 
 SOURCEDIR=src
 _SOURCES=main.cpp depth_map.cpp mesh.cpp disparity_map.cpp camera.cpp image_pair.cpp

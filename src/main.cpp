@@ -1,4 +1,7 @@
 #include <iostream>
+#include <cstring>
+#include <string>
+#include <algorithm>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -9,16 +12,12 @@
 #include "image_pair.h"
 #include "disparity_map.h"
 #include "depth_map.h"
-
+#include "mesh.h"
 
 using namespace cv;
 using namespace std;
 
-inline void print_usage()
-{
-    cout << "Usage:\n$reconstruct3d calibration_file image1 image2" << endl;
-}
-
+/* OLD MAIN
 void test_disparity(char **argv)
 {
     Mat image1, image2;
@@ -36,16 +35,13 @@ void test_disparity(char **argv)
     Vec<double, 3> T = {0, 1, 0};
     ImagePair imagePair(image1, image2, R, T);
 
-    /* Disparity Map */
     DisparityMap disparityMap = DisparityMap::generateDisparityMap(imagePair);
 
-    /* Depth Map */
     // DepthMap depthMap = DepthMap::generateDepthMap(disparityMap, Q);
 
     Mat disp_color;
     applyColorMap(disparityMap.getImage(), disp_color, COLORMAP_JET);
 
-    /* Save Results */
     imwrite("/vagrant/color_diparity_map.jpg", disp_color);
     imwrite("/vagrant/diparity_map.jpg", disparityMap.getImage());
     // imwrite("/vagrant/depth_map.jpg", depthMap.getImage());
@@ -55,27 +51,9 @@ void test_rectify(char **argv)
 {
     string calibration_file = argv[1];
     if(calibration_file == "")
-    {
-        cout << "Empty calibration_file" << endl;
-        print_usage();
-        exit(EXIT_FAILURE);
-    }
 
-    Mat image1, image2;
-    image1 = imread(argv[2], CV_LOAD_IMAGE_COLOR);
-    image2 = imread(argv[3], CV_LOAD_IMAGE_COLOR);
-
-    if (!image1.data || !image2.data)
-    {
-        cout << "Could not open or find the image" << endl;
-        print_usage();
-        exit(EXIT_FAILURE);
-    }
-
-    /* Camera Creation */
     Camera camera = Camera::createFromFile(calibration_file);
 
-    /* Image Rectification */
     Mat R = Mat::eye(3, 3, CV_64F);
     Mat Q;
     Vec<double, 3> T;
@@ -108,7 +86,6 @@ void test_merge_disparities(char **argv)
     ImagePair imagePair4(image4, image5, R, T);
     ImagePair imagePair5(image5, image6, R, T);
 
-    /* Disparity Map */
     cout << "Generating first disparity map..." << endl;
     DisparityMap disparityMap1 = DisparityMap::generateDisparityMap(imagePair1);
     cout << "Generating second disparity map..." << endl;
@@ -121,7 +98,6 @@ void test_merge_disparities(char **argv)
     DisparityMap disparityMap5 = DisparityMap::generateDisparityMap(imagePair5);
     cout << "Merging disparity maps..." << endl;
 
-    /* Apply color maps */
     Mat color_map1, color_map2, color_map3, color_map4, color_map5;
     applyColorMap(disparityMap1.getImage(), color_map1, COLORMAP_JET);
     applyColorMap(disparityMap2.getImage(), color_map2, COLORMAP_JET);
@@ -140,16 +116,133 @@ void test_merge_disparities(char **argv)
     imwrite("/vagrant/diparity_map_full.jpg", merged_disp.getImage());
 }
 
+    test_disparity(argv);
+*/
+
+// Command line instructions
+const std::string USAGE = "usage: reconstruct3d <left_image> <right_image> "
+                          "<obj_name> "
+                          "[--obj-height max_height] "
+                          "[--laplace-scale scale] "
+                          "[--laplace-iterations iterations] "
+                          "[--simplify fraction] "
+                          "[--no-reconstruction] "
+                          "[--help | -h] "
+                          "\n";
+
+// User defined renderer configuration
+struct Options {
+    std::string left_image_path, right_image_path;
+    std::string obj_name;
+    float obj_max_height;
+    float obj_laplace_scale;
+    int obj_laplace_iterations;
+    float obj_simplification_fraction;
+
+    bool no_reconstruction;
+};
+
+Options parseArgs(int argc, char *argv[])
+{
+    if (argc < 4)
+    {
+        std::cout << "ERROR: Missing arguments!" << std::endl;
+        std::cout << USAGE;
+        std::exit(EXIT_FAILURE);
+    }
+
+    Options options;
+
+    // Reading Image Pair
+    options.left_image_path  = argv[1];
+    options.right_image_path = argv[2];
+
+    // Reading output file name
+    options.obj_name         = argv[3];
+
+    // Default Values
+    options.obj_max_height = 0.3f;
+    options.obj_laplace_scale = 0.5f;
+    options.obj_laplace_iterations = 15;
+    options.obj_simplification_fraction = 0.2; // 80%
+    options.no_reconstruction = false;
+
+    for (int i = 4; i < argc; ++i)
+    {
+        // Reconstruction Arguments
+        if (!strcmp(argv[i], "--obj-height"))
+            options.obj_max_height = atof(argv[++i]);
+        else if (!strcmp(argv[i], "--laplace-scale"))
+            options.obj_laplace_scale = atof(argv[++i]);
+        else if (!strcmp(argv[i], "--laplace-iterations"))
+            options.obj_laplace_iterations = atoi(argv[++i]);
+        else if (!strcmp(argv[i], "--simplify"))
+            options.obj_simplification_fraction = std::min(1.0, std::max(0.0, atof(argv[++i])));
+        else if (!strcmp(argv[i], "--no-reconstruction"))
+            options.no_reconstruction = true;
+
+        // Usage Arguments
+        else if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h"))
+        {
+            std::cout << USAGE;
+            std::exit(EXIT_SUCCESS);
+        }
+        else
+        {
+            std::cout << "ERROR: No valid command [" << argv[i] << "]"
+                      << std::endl;
+            std::cout << USAGE;
+            std::exit(EXIT_SUCCESS);
+        }
+    }
+
+    return options;
+}
+
+cv::Mat loadImage(std::string filename)
+{
+    cv::Mat image = cv::imread(filename, CV_LOAD_IMAGE_COLOR);
+
+    if (!image.data)
+    {
+        std::cout << "ERROR: Could not open or find the image " << filename
+                  << std::endl;
+        std::cout << USAGE;
+        exit(EXIT_FAILURE);
+    }
+
+    return image;
+}
+
 int main(int argc, char** argv)
 {
-    /* Argument Checking */
-    //if (argc != 4)
-    //{
-    //    print_usage();
-    //    exit(EXIT_FAILURE);
-    //}
+    auto options = parseArgs(argc, argv);
 
-    test_disparity(argv);
+    Mat left_image = loadImage(options.left_image_path);
+    Mat right_image = loadImage(options.right_image_path);
+
+    ImagePair input_images(left_image, right_image);
+
+    /* Image Rectification */
+    // TODO
+
+    /* Disparity Map */
+    //DisparityMap disparityMap = DisparityMap::generateDisparityMap(input_images);
+
+    //Mat disp_color;
+    //applyColorMap(disparityMap.getImage(), disp_color, COLORMAP_JET);
+
+    ///* Save Results */
+    //imwrite("diparity_map.jpg", disparityMap.getImage());
+    //imwrite("color_diparity_map.jpg", disp_color);
+
+    if(!options.no_reconstruction)
+    {
+        Mesh().generateMesh(input_images.getImage1(), options.obj_name,
+                            options.obj_max_height, options.obj_laplace_scale,
+                            options.obj_laplace_iterations,
+                            options.obj_simplification_fraction);
+    }
 
     return EXIT_SUCCESS;
 }
