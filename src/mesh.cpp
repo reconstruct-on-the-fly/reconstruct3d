@@ -104,7 +104,7 @@ Mesh::generateMesh(cv::Mat image, std::string objname, float max_height,
     generateMesh(depth_map, max_height);
 
     std::cout << "Writing " << objname + "-no-laplace.obj ..." << std::endl;
-    createOBJ(objname + "-no-laplace.obj");
+    createOBJ(objname + "-before-laplace.obj");
 
     std::cout << "Laplace Smoothing..." << std::endl;
     for (int i = 0; i < n_laplace_steps; ++i)
@@ -115,7 +115,7 @@ Mesh::generateMesh(cv::Mat image, std::string objname, float max_height,
 
     std::cout << "Writing " << objname + ".obj ..." << std::endl;
 
-    auto outfile = objname + ".obj";
+    auto outfile = objname + "-high-poly.obj";
     createOBJ(outfile);
 
     std::cout << "OBJ Created!" << std::endl;
