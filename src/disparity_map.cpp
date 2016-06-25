@@ -48,12 +48,16 @@ DisparityMap::sadAt(int i, int j, Mat left, Mat right, int window_size,
 }
 
 DisparityMap
-DisparityMap::generateDisparityMap(Mat left, Mat right, bool no_filter)
+DisparityMap::generateDisparityMap(
+        cv::Mat left, cv::Mat right, std::string objname,
+        int window_size, int min_disp, int max_disp,
+        bool wls_filter, double wls_lambda, double wls_sigma,
+        bool noise_reduction_filter, int noise_reduction_window_size,
+        float noise_reduction_threshold
+    )
 {
     // Custom Params
-    int min_disp = 0, max_disp = 160;
     int norm_disp = abs(min_disp) + abs(max_disp);
-    int window_size = 5;
     int half_window_size = (window_size - 1) / 2;
     int T = 0;
     int T2 = 100;
@@ -110,17 +114,16 @@ DisparityMap::generateDisparityMap(Mat left, Mat right, bool no_filter)
             }
         }
     }
-    
+
 //    Mat grad_x, abs_grad_x;
 //    Sobel( left, grad_x, CV_16S, 1, 0, 3, 1, 0, BORDER_DEFAULT );
 //    convertScaleAbs( grad_x, abs_grad_x );
 //    addWeighted( abs_grad_x, 1, disparity, 1, 0, disparity );
 
-    //no_filter = true;
-    if(!no_filter)
+    if(wls_filter)
     {
-        double lambda = 16000.0;
-        double sigma  = 2;
+        double lambda = wls_lambda;
+        double sigma  = wls_sigma;
 
         Ptr<DisparityWLSFilter> wls_filter;
         wls_filter = createDisparityWLSFilterGeneric(false);
@@ -140,14 +143,6 @@ DisparityMap::generateDisparityMap(Mat left, Mat right, bool no_filter)
 
     Rect roi(max_disp, 0, cols - max_disp, rows);
     return DisparityMap(disparity(roi));
-}
-
-DisparityMap
-DisparityMap::generateDisparityMap(ImagePair imagePair, bool no_filter)
-{
-    return DisparityMap::generateDisparityMap(imagePair.getImage1(),
-                                              imagePair.getImage2(),
-                                              no_filter);
 }
 
 Mat
