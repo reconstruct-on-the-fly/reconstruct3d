@@ -18,6 +18,8 @@ public:
         float noise_reduction_threshold);
 
     static void preprocessImages(cv::Mat &left, cv::Mat &right);
+    static cv::Mat normalize_image(cv::Mat image, int window_size,
+                                   float threshold);
     static int sadAt(int i, int j, cv::Mat left, cv::Mat right,
                      int window_size, int offset);
     static DisparityMap merge(std::vector<cv::Mat> maps);

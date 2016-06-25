@@ -57,68 +57,41 @@ DisparityMap::generateDisparityMap(
     )
 {
     // Custom Params
-    int norm_disp = abs(min_disp) + abs(max_disp);
     int half_window_size = (window_size - 1) / 2;
-    int T = 0;
-    int T2 = 100;
 
     DisparityMap::preprocessImages(left, right);
 
     /* Disparity Algorithm */
     const int rows = left.rows;
-    const int cols = left.cols * left.channels();
+    const int cols = left.cols;
 
-    Mat disparity = left.clone();
+    Mat disparity = Mat(rows, cols, CV_32S);
     int best_disp = 0;
 
     for(int i = half_window_size; i < rows - half_window_size; ++i)
     {
-        int min_sad = numeric_limits<int>::max();
-
         for(int j = half_window_size + max_disp; j < cols - half_window_size; ++j)
         {
-            int new_sad = DisparityMap::sadAt(i, j, left, left,
-                                              window_size, +window_size);
-
-            if (new_sad > T)
-            {
-                min_sad = numeric_limits<int>::max();
-            }
-            else
-            {
-                int mapped_disp = (255.0 / norm_disp) * best_disp;
-                disparity.at<uchar>(i, j) = mapped_disp;
-                continue;
-            }
-
+            int min_sad = numeric_limits<int>::max();
             for(int disp = min_disp; (disp >= -max_disp) ; --disp)
             {
                 int sad = DisparityMap::sadAt(i, j, left, right,
                                               window_size, disp);
 
-                if(sad < min_sad)
+                if(sad <= min_sad)
                 {
                     min_sad = sad;
                     best_disp = abs(disp);
                 }
             }
-
-            if (min_sad < T2)
-            {
-                int mapped_disp = (255.0 / norm_disp) * best_disp;
-                disparity.at<uchar>(i, j) = mapped_disp;
-            }
-            else
-            {
-                disparity.at<uchar>(i, j) = 0;
-            }
+            disparity.at<int>(i, j) = best_disp;
         }
     }
 
-//    Mat grad_x, abs_grad_x;
-//    Sobel( left, grad_x, CV_16S, 1, 0, 3, 1, 0, BORDER_DEFAULT );
-//    convertScaleAbs( grad_x, abs_grad_x );
-//    addWeighted( abs_grad_x, 1, disparity, 1, 0, disparity );
+    Rect roi(max_disp + half_window_size, half_window_size,
+             cols - max_disp - half_window_size, rows - half_window_size);
+    disparity = disparity(roi);
+    disparity = DisparityMap::normalize_image(disparity, 30, 0.4);
 
     if(wls_filter)
     {
@@ -132,17 +105,51 @@ DisparityMap::generateDisparityMap(
 
         Mat filtered_disp;
         disparity.convertTo(disparity, CV_16S);
-        wls_filter->filter(disparity, left, filtered_disp);
-        getDisparityVis(filtered_disp, disparity, 16.0);
-
-//        getDisparityVis(disparity, disparity, vis_mult);
-//        cout << left.depth() << endl;
-//        cout << disparity.depth() << endl;
-//        jointBilateralFilter(left, disparity, disparity, 10, 100, 10);
+        wls_filter->filter(disparity, left(roi), filtered_disp);
+        normalize(filtered_disp, disparity, 0, 255, NORM_MINMAX, CV_8UC1);
+    } else {
+        normalize(disparity, disparity, 0, 255, NORM_MINMAX, CV_8UC1);
     }
 
-    Rect roi(max_disp, 0, cols - max_disp, rows);
-    return DisparityMap(disparity(roi));
+    return DisparityMap(disparity);
+}
+
+Mat
+DisparityMap::normalize_image(Mat image, int window_size, float threshold)
+{
+    int half_window_size = (window_size - 1) / 2;
+
+    const int rows = image.rows;
+    const int cols = image.cols;
+
+    Mat normalized = Mat(rows, cols, CV_32S);
+
+    for(int i = half_window_size; i < rows - half_window_size; ++i)
+    {
+        for(int j = half_window_size; j < cols - half_window_size; ++j)
+        {
+            int window_sum = 0;
+
+            for(int ii = -half_window_size; ii < half_window_size; ++ii)
+            {
+                for(int jj = -half_window_size; jj < half_window_size; ++jj)
+                {
+                    window_sum += image.at<int>(i + ii, j + jj);
+                }
+            }
+
+            float window_avg = float(window_sum)/float(window_size*window_size);
+
+            auto pixel_value = image.at<int>(i, j);
+
+            if (abs(1 - pixel_value/window_avg) >= threshold)
+                normalized.at<int>(i, j) = (uchar) window_avg;
+            else
+                normalized.at<int>(i, j) = pixel_value;
+        }
+    }
+
+    return normalized;
 }
 
 Mat
