@@ -27,6 +27,11 @@ inline T interpolate(const T v, const T a0, const T b0, const T a1, const T b1)
     return (((v - a0) * (b1 - a1)) / (b0 - a0)) + a1;
 }
 
+inline int gcd(int a, int b)
+{
+    return (b == 0 ? a : gcd(b, a % b));
+}
+
 void
 Mesh::generateMesh(DepthMap depthMap, float max_height)
 {
@@ -34,6 +39,10 @@ Mesh::generateMesh(DepthMap depthMap, float max_height)
 
     const unsigned int rows = image.rows;
     const unsigned int cols = image.cols*image.channels();
+
+    auto div = gcd(rows, cols);
+    auto r = rows/div;
+    auto c = cols/div;
 
     for(unsigned int i = 0; i < rows; ++i)
     {
@@ -46,9 +55,9 @@ Mesh::generateMesh(DepthMap depthMap, float max_height)
 
             const uchar k = image.at<uchar>(i, j);
             m_vertices.push_back(cv::Point3f(
-                interpolate<float>(i, 0, rows, -1.0f, 1.0f),
-                interpolate<float>(k, 0, 255,  -1.0f, max_height),
-                interpolate<float>(j, 0, cols, -1.0f, 1.0f)
+                interpolate<float>(i, 0, rows, -float(r), float(r)),
+                interpolate<float>(k, 0, 255,  0.0f, max_height),
+                interpolate<float>(j, 0, cols, -float(c), float(c))
                 ));
 
             if(j >= cols - 2 || i >= rows - 2) continue;
