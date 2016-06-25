@@ -290,14 +290,6 @@ int main(int argc, char** argv)
                 options.wls_filter, options.wls_lambda, options.wls_sigma,
                 options.noise_reduction_filter, options.noise_reduction_window_size, options.noise_reduction_threshold
         );
-
-        // TODO: Move all imwrite to inside disparity map, using obj_name as the name
-        //Mat disp_color;
-        //applyColorMap(disparityMap.getImage(), disp_color, COLORMAP_JET);
-
-        ///* Save Results */
-        //imwrite("diparity_map.jpg", disparityMap.getImage());
-        //imwrite("color_diparity_map.jpg", disp_color);
     }
     else
         disparity_image = left_image;

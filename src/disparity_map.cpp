@@ -60,20 +60,22 @@ DisparityMap::generateDisparityMap(
     int half_window_size = (window_size - 1) / 2;
 
     DisparityMap::preprocessImages(left, right);
+    imwrite(objname+"_left_preprocess.jpg", left);
+    imwrite(objname+"_right_preprocess.jpg", right);
 
     /* Disparity Algorithm */
     const int rows = left.rows;
     const int cols = left.cols;
 
     Mat disparity = Mat(rows, cols, CV_32S);
-    int best_disp = 0;
+    int best_disp = min_disp;
 
     for(int i = half_window_size; i < rows - half_window_size; ++i)
     {
         for(int j = half_window_size + max_disp; j < cols - half_window_size; ++j)
         {
             int min_sad = numeric_limits<int>::max();
-            for(int disp = min_disp; (disp >= -max_disp) ; --disp)
+            for(int disp = -min_disp; (disp >= -max_disp) ; --disp)
             {
                 int sad = DisparityMap::sadAt(i, j, left, right,
                                               window_size, disp);
@@ -87,31 +89,48 @@ DisparityMap::generateDisparityMap(
             disparity.at<int>(i, j) = best_disp;
         }
     }
+    imwrite(objname+"_invalid_disparity.jpg", disparity);
 
+    /* Crops out invalid disparity range */
     Rect roi(max_disp + half_window_size, half_window_size,
-             cols - max_disp - half_window_size, rows - half_window_size);
+             cols - max_disp - window_size, rows - window_size);
     disparity = disparity(roi);
-    disparity = DisparityMap::normalize_image(disparity, 30, 0.4);
+    disparity = DisparityMap::normalize_image(disparity,
+                                              noise_reduction_window_size,
+                                              noise_reduction_threshold);
+    imwrite(objname+"_valid_disparity.jpg", disparity);
+
+    /* Normalizes disparity values */
+    Mat normalized_disparity;
+    normalize(disparity, normalized_disparity, 0, 255, NORM_MINMAX, CV_8UC1);
+    imwrite(objname+"_normalized_disparity.jpg", normalized_disparity);
+
+    /* WLS filtering */
+    double lambda = wls_lambda;
+    double sigma  = wls_sigma;
+
+    Ptr<DisparityWLSFilter> disparity_filter;
+    disparity_filter = createDisparityWLSFilterGeneric(false);
+    disparity_filter->setLambda(lambda);
+    disparity_filter->setSigmaColor(sigma);
+
+    Mat wls_disparity;
+    disparity.convertTo(disparity, CV_16S);
+    disparity_filter->filter(disparity, left(roi), wls_disparity);
+    normalize(wls_disparity, wls_disparity, 0, 255, NORM_MINMAX, CV_8UC1);
+    imwrite(objname+"_wls_disparity.jpg", wls_disparity);
+
+    /* Save color mapped disparities */
+    Mat color_normalized, color_wls;
+    applyColorMap(normalized_disparity, color_normalized, COLORMAP_JET);
+    applyColorMap(wls_disparity, color_wls, COLORMAP_JET);
+    imwrite(objname+"_normalized_disparity_color.jpg", color_normalized);
+    imwrite(objname+"_wls_disparity_color.jpg", color_wls);
 
     if(wls_filter)
-    {
-        double lambda = wls_lambda;
-        double sigma  = wls_sigma;
-
-        Ptr<DisparityWLSFilter> wls_filter;
-        wls_filter = createDisparityWLSFilterGeneric(false);
-        wls_filter->setLambda(lambda);
-        wls_filter->setSigmaColor(sigma);
-
-        Mat filtered_disp;
-        disparity.convertTo(disparity, CV_16S);
-        wls_filter->filter(disparity, left(roi), filtered_disp);
-        normalize(filtered_disp, disparity, 0, 255, NORM_MINMAX, CV_8UC1);
-    } else {
-        normalize(disparity, disparity, 0, 255, NORM_MINMAX, CV_8UC1);
-    }
-
-    return DisparityMap(disparity);
+        return DisparityMap(wls_disparity);
+    else
+        return DisparityMap(normalized_disparity);
 }
 
 Mat
@@ -123,6 +142,7 @@ DisparityMap::normalize_image(Mat image, int window_size, float threshold)
     const int cols = image.cols;
 
     Mat normalized = Mat(rows, cols, CV_32S);
+    image.copyTo(normalized);
 
     for(int i = half_window_size; i < rows - half_window_size; ++i)
     {
