@@ -89,16 +89,20 @@ DisparityMap::generateDisparityMap(
             disparity.at<int>(i, j) = best_disp;
         }
     }
-    imwrite(objname+"_invalid_disparity.jpg", disparity);
+    imwrite(objname+"_noise_disparity.jpg", disparity);
 
     /* Crops out invalid disparity range */
     Rect roi(max_disp + half_window_size, half_window_size,
              cols - max_disp - window_size, rows - window_size);
     disparity = disparity(roi);
-    disparity = DisparityMap::normalize_image(disparity,
-                                              noise_reduction_window_size,
-                                              noise_reduction_threshold);
-    imwrite(objname+"_valid_disparity.jpg", disparity);
+
+    if (noise_reduction_filter)
+    {
+        disparity = DisparityMap::normalize_image(disparity,
+                                                  noise_reduction_window_size,
+                                                  noise_reduction_threshold);
+        imwrite(objname+"_noise_reduced_disparity.jpg", disparity);
+    }
 
     /* Normalizes disparity values */
     Mat normalized_disparity;
@@ -106,29 +110,31 @@ DisparityMap::generateDisparityMap(
     imwrite(objname+"_normalized_disparity.jpg", normalized_disparity);
 
     /* WLS filtering */
-    double lambda = wls_lambda;
-    double sigma  = wls_sigma;
+    if (wls_filter)
+    {
+        double lambda = wls_lambda;
+        double sigma  = wls_sigma;
 
-    Ptr<DisparityWLSFilter> disparity_filter;
-    disparity_filter = createDisparityWLSFilterGeneric(false);
-    disparity_filter->setLambda(lambda);
-    disparity_filter->setSigmaColor(sigma);
+        Ptr<DisparityWLSFilter> disparity_filter;
+        disparity_filter = createDisparityWLSFilterGeneric(false);
+        disparity_filter->setLambda(lambda);
+        disparity_filter->setSigmaColor(sigma);
 
-    Mat wls_disparity;
-    disparity.convertTo(disparity, CV_16S);
-    disparity_filter->filter(disparity, left(roi), wls_disparity);
-    normalize(wls_disparity, wls_disparity, 0, 255, NORM_MINMAX, CV_8UC1);
-    imwrite(objname+"_wls_disparity.jpg", wls_disparity);
+        Mat wls_disparity;
+        disparity.convertTo(disparity, CV_16S);
+        disparity_filter->filter(disparity, left(roi), wls_disparity);
+        normalize(wls_disparity, wls_disparity, 0, 255, NORM_MINMAX, CV_8UC1);
+        imwrite(objname+"_wls_disparity.jpg", wls_disparity);
 
-    /* Save color mapped disparities */
-    Mat color_normalized, color_wls;
-    applyColorMap(normalized_disparity, color_normalized, COLORMAP_JET);
-    applyColorMap(wls_disparity, color_wls, COLORMAP_JET);
-    imwrite(objname+"_normalized_disparity_color.jpg", color_normalized);
-    imwrite(objname+"_wls_disparity_color.jpg", color_wls);
+        /* Save color mapped disparities */
+        Mat color_normalized, color_wls;
+        applyColorMap(normalized_disparity, color_normalized, COLORMAP_JET);
+        applyColorMap(wls_disparity, color_wls, COLORMAP_JET);
+        imwrite(objname+"_normalized_disparity_color.jpg", color_normalized);
+        imwrite(objname+"_wls_disparity_color.jpg", color_wls);
 
-    if(wls_filter)
         return DisparityMap(wls_disparity);
+    }
     else
         return DisparityMap(normalized_disparity);
 }

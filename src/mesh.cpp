@@ -32,13 +32,20 @@ inline int gcd(int a, int b)
     return (b == 0 ? a : gcd(b, a % b));
 }
 
+uchar readGrayPixel(cv::Mat image, int i, int j)
+{
+    auto k = image.at<cv::Vec3b>(i, j);
+    // return 0.21 * k[2] + 0.72 * k[1] + 0.07 * k[0]; // Luminosity
+    return (k[0] + k[1] + k[2])/3;
+}
+
 void
 Mesh::generateMesh(DepthMap depthMap, float max_height)
 {
     auto image = depthMap.getImage();
 
     const unsigned int rows = image.rows;
-    const unsigned int cols = image.cols*image.channels();
+    const unsigned int cols = image.cols;
 
     auto div = gcd(rows, cols);
     float r = rows/div;
@@ -47,20 +54,31 @@ Mesh::generateMesh(DepthMap depthMap, float max_height)
     if (max_height <= 0)
         max_height = std::max(c, r)/std::min(c, r);
 
+    uchar max_pixel = readGrayPixel(image, 0, 0);
+    uchar min_pixel = readGrayPixel(image, 0, 0);
+    for(unsigned int i = 0; i < rows; ++i)
+    {
+        for(unsigned int j = 0; j < cols; ++j)
+        {
+            max_pixel = std::max(max_pixel, readGrayPixel(image, i, j));
+            min_pixel = std::min(min_pixel, readGrayPixel(image, i, j));
+        }
+    }
+
     for(unsigned int i = 0; i < rows; ++i)
     {
         for(unsigned int j = 0; j < cols; ++j)
         {
             int v1 = i*cols + j;           // current vertex
-            int v2 = i*cols + j + 1;       // foward vertex
+            int v2 = i*cols + j + 1;       // forward vertex
             int v3 = (i + 1)*cols + j;     // underneath vertex
             int v4 = (i + 1)*cols + j + 1; // diagonal vertex
 
-            const uchar k = image.at<uchar>(i, j);
+            const uchar k = readGrayPixel(image, i, j);
             m_vertices.push_back(cv::Point3f(
-                    interpolate<float>(i, 0, rows, -c, c),
-                    interpolate<float>(k, 0, 255,  0.0f, max_height),
-                    interpolate<float>(j, 0, cols, -r, r)
+                    interpolate<float>(i, 0, rows, -r, r),
+                    interpolate<float>(k, min_pixel, max_pixel,  0.0f, max_height),
+                    interpolate<float>(j, 0, cols, -c, c)
                 ));
 
             if(j >= cols - 2 || i >= rows - 2) continue;
@@ -115,7 +133,7 @@ Mesh::generateMesh(cv::Mat image, std::string objname, float max_height,
     std::cout << "Generating Mesh..." << std::endl;
     generateMesh(depth_map, max_height);
 
-    std::cout << "Writing " << objname + "-no-laplace.obj ..." << std::endl;
+    std::cout << "Writing " << objname + "-before-laplace.obj ..." << std::endl;
     createOBJ(objname + "-before-laplace.obj");
 
     std::cout << "Laplace Smoothing..." << std::endl;
