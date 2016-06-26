@@ -188,7 +188,7 @@ Options parseArgs(int argc, char *argv[])
     options.noise_reduction_threshold = 0.4f;
     options.no_disparity = false;
 
-    options.obj_max_height = 1.0f;
+    options.obj_max_height = 0.0f;
     options.obj_laplace_scale = 0.5f;
     options.obj_laplace_iterations = 15;
     options.obj_simplification_fraction = 0.2; // 80%

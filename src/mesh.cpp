@@ -41,8 +41,11 @@ Mesh::generateMesh(DepthMap depthMap, float max_height)
     const unsigned int cols = image.cols*image.channels();
 
     auto div = gcd(rows, cols);
-    auto r = rows/div;
-    auto c = cols/div;
+    float r = rows/div;
+    float c = cols/div;
+
+    if (max_height <= 0)
+        max_height = std::max(c, r)/std::min(c, r);
 
     for(unsigned int i = 0; i < rows; ++i)
     {
@@ -55,9 +58,9 @@ Mesh::generateMesh(DepthMap depthMap, float max_height)
 
             const uchar k = image.at<uchar>(i, j);
             m_vertices.push_back(cv::Point3f(
-                interpolate<float>(i, 0, rows, -float(r), float(r)),
-                interpolate<float>(k, 0, 255,  0.0f, max_height),
-                interpolate<float>(j, 0, cols, -float(c), float(c))
+                    interpolate<float>(i, 0, rows, -c, c),
+                    interpolate<float>(k, 0, 255,  0.0f, max_height),
+                    interpolate<float>(j, 0, cols, -r, r)
                 ));
 
             if(j >= cols - 2 || i >= rows - 2) continue;
