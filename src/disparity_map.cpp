@@ -59,6 +59,7 @@ DisparityMap::generateDisparityMap(
     // Custom Params
     int half_window_size = (window_size - 1) / 2;
 
+    std::cout << "Pre processing images..." << std::endl;
     DisparityMap::preprocessImages(left, right);
     imwrite(objname+"_left_preprocess.jpg", left);
     imwrite(objname+"_right_preprocess.jpg", right);
@@ -70,6 +71,7 @@ DisparityMap::generateDisparityMap(
     Mat disparity = Mat(rows, cols, CV_32S);
     int best_disp = min_disp;
 
+    std::cout << "Stereo Correspondence..." << std::endl;
     for(int i = half_window_size; i < rows - half_window_size; ++i)
     {
         for(int j = half_window_size + max_disp; j < cols - half_window_size; ++j)
@@ -98,6 +100,7 @@ DisparityMap::generateDisparityMap(
 
     if (noise_reduction_filter)
     {
+        std::cout << "Noise Reduction filter..." << std::endl;
         disparity = DisparityMap::normalize_image(disparity,
                                                   noise_reduction_window_size,
                                                   noise_reduction_threshold);
@@ -112,6 +115,7 @@ DisparityMap::generateDisparityMap(
     /* WLS filtering */
     if (wls_filter)
     {
+        std::cout << "WLS Filter..." << std::endl;
         double lambda = wls_lambda;
         double sigma  = wls_sigma;
 

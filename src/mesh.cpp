@@ -34,9 +34,12 @@ inline int gcd(int a, int b)
 
 uchar readGrayPixel(cv::Mat image, int i, int j)
 {
-    auto k = image.at<cv::Vec3b>(i, j);
-    // return 0.21 * k[2] + 0.72 * k[1] + 0.07 * k[0]; // Luminosity
-    return (k[0] + k[1] + k[2])/3;
+    int sum = 0;
+
+    for (int ch = 0; ch < image.channels(); ch++)
+        sum += image.data[image.step[0] * i + image.step[1] * j + ch];
+
+    return static_cast<uchar>(sum/image.channels());
 }
 
 void
@@ -51,20 +54,6 @@ Mesh::generateMesh(DepthMap depthMap, float max_height)
     float r = rows/div;
     float c = cols/div;
 
-    if (max_height <= 0)
-        max_height = std::max(c, r)/std::min(c, r);
-
-    uchar max_pixel = readGrayPixel(image, 0, 0);
-    uchar min_pixel = readGrayPixel(image, 0, 0);
-    for(unsigned int i = 0; i < rows; ++i)
-    {
-        for(unsigned int j = 0; j < cols; ++j)
-        {
-            max_pixel = std::max(max_pixel, readGrayPixel(image, i, j));
-            min_pixel = std::min(min_pixel, readGrayPixel(image, i, j));
-        }
-    }
-
     for(unsigned int i = 0; i < rows; ++i)
     {
         for(unsigned int j = 0; j < cols; ++j)
@@ -76,9 +65,9 @@ Mesh::generateMesh(DepthMap depthMap, float max_height)
 
             const uchar k = readGrayPixel(image, i, j);
             m_vertices.push_back(cv::Point3f(
-                    interpolate<float>(i, 0, rows, -r, r),
-                    interpolate<float>(k, min_pixel, max_pixel,  0.0f, max_height),
-                    interpolate<float>(j, 0, cols, -c, c)
+                    interpolate<float>(i, 0, rows, -1.0f, 1.0f),
+                    interpolate<float>(k, 0, 255,  0.0f, max_height),
+                    interpolate<float>(j, 0, cols, -c/r, c/r)
                 ));
 
             if(j >= cols - 2 || i >= rows - 2) continue;
