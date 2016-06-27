@@ -33,6 +33,34 @@ const std::string USAGE = "usage: reconstruct3d <left_image> <right_image> "
                           "\n\t[--help | -h] "
                           "\n";
 
+const std::string HELP = "\n\n Parameters help"
+                          "\n\t[--disparity-range min max] "
+                          "\n\t\t Minimum and maximum disparity must be positive and min > max"
+                          "\n\n\t[--disparity-window size] "
+                          "\n\t\t Window size for disparity block matching must be odd"
+                          "\n\n\t[--no-wls-filter | --wls-filter lambda sigma] "
+                          "\n\t\t --no-wls-filter disables wls filter"
+                          "\n\t\t --wls-filter lambda default must be positive recommended value 8000"
+                          "\n\t\t --wls-filter sigma must range from 0.8 to 2 "
+                          "\n\n\t[--no-noise-reduction-filter | --noise-reduction-filter window_size threshold] "
+                          "\n\t\t --no-noise-reduction disables noise reduction"
+                          "\n\t\t --noise-reduction window_size must be odd"
+                          "\n\t\t --noise-reduction threshold must range from 0 to 1"
+                          "\n\n\t[--obj-height max_height] "
+                          "\n\t\t 3D model maximum height for object"
+                          "\n\n\t[--laplace-scale scale] "
+                          "\n\t\t Scale for the laplacian smoothing must range from 0 to 1"
+                          "\n\n\t[--laplace-iterations iterations] "
+                          "\n\t\t Iterations for executing laplacian smoothing must be positive"
+                          "\n\n\t[--simplify fraction] "
+                          "\n\t\t Simplification percentage for 3D object must range from 0 to 1"
+                          "\n\n\t[--no-reconstruction] "
+                          "\n\t\t Disables reconstruction process "
+                          "\n\n\t[--no-disparity] "
+                          "\n\t\t Disables disparity correspondence "
+                          "\n\n\t[--help | -h] "
+                          "\n";
+
 // User defined renderer configuration
 struct Options {
     std::string left_image_path, right_image_path;
@@ -60,6 +88,16 @@ Options parseArgs(int argc, char *argv[])
 {
     if (argc < 4)
     {
+        for (int i = 1; i < argc; ++i)
+        {
+            if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h"))
+            {
+                std::cout << USAGE;
+                std::cout << HELP;
+                std::exit(EXIT_SUCCESS);
+            }
+
+        }
         std::cout << "ERROR: Missing arguments!" << std::endl;
         std::cout << USAGE;
         std::exit(EXIT_FAILURE);
@@ -138,6 +176,7 @@ Options parseArgs(int argc, char *argv[])
         else if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h"))
         {
             std::cout << USAGE;
+            std::cout << HELP;
             std::exit(EXIT_SUCCESS);
         }
         else
