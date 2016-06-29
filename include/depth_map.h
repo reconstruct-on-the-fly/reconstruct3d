@@ -11,9 +11,7 @@ public:
     DepthMap(cv::Mat image);
 
     static DepthMap generateDepthMap(DisparityMap disparity,
-                                     cv::Mat Q,
-                                     bool handleMissingValues=false,
-                                     int ddepth=-1);
+                                     cv::Mat Q);
 
     cv::Mat getImage();
 
