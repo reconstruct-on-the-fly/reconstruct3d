@@ -24,7 +24,7 @@ for mesh simplification.
 
 ## Usage
 
-```python
+```shell
 usage: reconstruct3d <left_image> <right_image> <obj_name>
     [--disparity-range min max]
     [--disparity-window size]
