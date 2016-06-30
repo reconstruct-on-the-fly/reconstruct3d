@@ -97,6 +97,7 @@ DisparityMap::generateDisparityMap(
     Rect roi(max_disp + half_window_size, half_window_size,
              cols - max_disp - window_size, rows - window_size);
     disparity = disparity(roi);
+    imwrite(objname+"_roi_noise_disparity.jpg", disparity);
 
     if (noise_reduction_filter)
     {
