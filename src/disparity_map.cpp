@@ -21,7 +21,7 @@ DisparityMap::preprocessImages(Mat &left, Mat &right)
     cvtColor(left, left, COLOR_BGR2GRAY);
     cvtColor(right, right, COLOR_BGR2GRAY);
 
-    Ptr<CLAHE> clahe = createCLAHE(1, Size(2, 2));
+    //Ptr<CLAHE> clahe = createCLAHE(1, Size(2, 2));
     //clahe->apply(left, left);
     //clahe->apply(right, right);
     //GaussianBlur(left, left, Size(3, 3), 0);

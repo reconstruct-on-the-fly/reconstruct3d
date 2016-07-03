@@ -5,8 +5,6 @@
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
-#include "opencv2/stitching.hpp"
-#include <opencv2/imgproc.hpp>
 
 #include "camera.h"
 #include "image_pair.h"
@@ -30,6 +28,7 @@ const std::string USAGE = "usage: reconstruct3d <left_image> <right_image> "
                           "\n\t[--simplify fraction] "
                           "\n\t[--no-reconstruction] "
                           "\n\t[--no-disparity] "
+                          "\n\t[--no-rectification] "
                           "\n\t[--help | -h] "
                           "\n";
 
@@ -58,6 +57,8 @@ const std::string HELP = "\n\n Parameters help"
                           "\n\t\t Disables reconstruction process "
                           "\n\n\t[--no-disparity] "
                           "\n\t\t Disables disparity correspondence "
+                          "\n\n\t[--no-rectification] "
+                          "\n\t\t Disables rectfication "
                           "\n\n\t[--help | -h] "
                           "\n";
 
@@ -65,6 +66,9 @@ const std::string HELP = "\n\n Parameters help"
 struct Options {
     std::string left_image_path, right_image_path;
     std::string obj_name;
+
+    //Rectification
+    bool no_rectification;
 
     // Disparity
     int min_disparity, max_disparity, disparity_window_size;
@@ -113,6 +117,8 @@ Options parseArgs(int argc, char *argv[])
     options.obj_name         = argv[3];
 
     // Default Values
+    options.no_rectification = false;
+
     options.disparity_window_size = 3;
     options.min_disparity = 0;
     options.max_disparity = 160;
@@ -132,6 +138,10 @@ Options parseArgs(int argc, char *argv[])
 
     for (int i = 4; i < argc; ++i)
     {
+        // Rectification Arguments
+        if (!strcmp(argv[i], "--no-rectification"))
+            options.no_rectification = true;
+
         // Disparity Arguments
         if (!strcmp(argv[i], "--disparity-range"))
         {
@@ -214,7 +224,16 @@ int main(int argc, char** argv)
     Mat right_image = loadImage(options.right_image_path);
 
     /* Image Rectification */
-    // TODO
+    ImagePair rectifed_pair;
+
+    if(!options.no_rectification)
+    {
+        rectifed_pair  = ImagePair(left_image,
+                                   right_image).rectify(options.obj_name);
+        // rectifed_pair.rectify(options.obj_name + "2");
+    }
+    else
+        rectifed_pair = ImagePair(left_image, right_image);
 
     Mat disparity_image;
 
@@ -222,7 +241,7 @@ int main(int argc, char** argv)
     if (!options.no_disparity)
     {
         DisparityMap disparityMap = DisparityMap::generateDisparityMap(
-                left_image, right_image, options.obj_name,
+                rectifed_pair.img1, rectifed_pair.img2, options.obj_name,
                 options.disparity_window_size, options.min_disparity, options.max_disparity,
                 options.wls_filter, options.wls_lambda, options.wls_sigma,
                 options.noise_reduction_filter, options.noise_reduction_window_size, options.noise_reduction_threshold
@@ -230,7 +249,7 @@ int main(int argc, char** argv)
         disparity_image = disparityMap.getImage();
     }
     else
-        disparity_image = left_image;
+        disparity_image = rectifed_pair.img1;
 
     if(!options.no_reconstruction)
     {
