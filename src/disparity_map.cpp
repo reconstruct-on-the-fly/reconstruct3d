@@ -190,17 +190,39 @@ DisparityMap::getImage()
 }
 
 DisparityMap
-DisparityMap::merge(vector<Mat> maps)
+DisparityMap::merge(DisparityMap left_disp, DisparityMap right_disp,
+                    int offset)
 {
-    Mat merged_maps;
+    Mat left = left_disp.getImage();
+    Mat right = right_disp.getImage();
+    const int rows = left.rows;
+    const int cols = left.cols + offset;
+    Mat merged_maps = Mat(rows, cols, CV_8UC1);
 
-    Stitcher stitcher = Stitcher::createDefault();
-    Stitcher::Status status = stitcher.stitch(maps, merged_maps);
+    cout << "Merging disparities..." << endl;
+    Rect roi_left = Rect(0, 0, offset, rows);
+    left(roi_left).copyTo(merged_maps(roi_left));
 
-    if (status != Stitcher::OK)
+    for(int i = 0; i < rows; ++i)
     {
-        cout << "error found while stitching: " << status << endl;
+        for (int j = offset; j < cols; ++j)
+        {
+            if (j <= left.cols)
+            {
+                merged_maps.at<uchar>(i, j) = max(left.at<uchar>(i, j),
+                                                  right.at<uchar>(i,
+                                                      j - offset));
+            }
+            else
+            {
+                merged_maps.at<uchar>(i, j) = right.at<uchar>(i, j - offset);
+            }
+        }
     }
+
+    Mat color_merged_maps;
+    applyColorMap(merged_maps, color_merged_maps, COLORMAP_JET);
+    imwrite("/vagrant/merged_disp.jpg", color_merged_maps);
 
     return DisparityMap(merged_maps);
 }

@@ -22,7 +22,8 @@ public:
                                    float threshold);
     static int sadAt(int i, int j, cv::Mat left, cv::Mat right,
                      int window_size, int offset);
-    static DisparityMap merge(std::vector<cv::Mat> maps);
+    static DisparityMap merge(DisparityMap left, DisparityMap right,
+                              int offset);
 
     cv::Mat getImage();
 
