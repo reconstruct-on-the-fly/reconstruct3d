@@ -17,6 +17,104 @@ ImagePair::ImagePair() {}
 ImagePair::ImagePair(Mat _img1, Mat _img2)
     : img1(_img1), img2(_img2) {}
 
+cv::Rect findROI(cv::Mat image)
+{
+    const unsigned int rows = image.rows;
+    const unsigned int cols = image.cols;
+
+    size_t x0 = cols, y0 = rows;
+    size_t x1 = 0, y1 = 0;
+
+    for(size_t i = 0; i < rows; ++i)
+    {
+        for(size_t j = 0; j < cols; ++j)
+        {
+            int sum = 0;
+            for (int ch = 0; ch < image.channels(); ch++)
+                sum += image.data[image.step[0] * i + image.step[1] * j + ch];
+
+            if(sum != 0)
+            {
+                x0 = min(x0, j);
+                y0 = min(y0, i);
+                x1 = max(x1, j);
+                y1 = max(y1, i);
+            }
+        }
+    }
+
+    cout << "Valid ROI (" << x0 << ", " << y0 << ") to (" << x1 << ", " << y1 << ")\n";
+
+    return cv::Rect(x0, y0, x1 - x0, y1 - y0);
+}
+
+// Code from: http://stackoverflow.com/questions/6087241/opencv-warpperspective/8229116#8229116
+
+// Convert a vector of non-homogeneous 2D points to a vector of homogenehous 2D points.
+void to_homogeneous(const std::vector< cv::Point2f >& non_homogeneous, std::vector< cv::Point3f >& homogeneous)
+{
+    homogeneous.resize(non_homogeneous.size());
+    for (size_t i = 0; i < non_homogeneous.size(); i++) {
+        homogeneous[i].x = non_homogeneous[i].x;
+        homogeneous[i].y = non_homogeneous[i].y;
+        homogeneous[i].z = 1.0;
+    }
+}
+
+// Convert a vector of homogeneous 2D points to a vector of non-homogenehous 2D points.
+void from_homogeneous(const std::vector< cv::Point3f >& homogeneous, std::vector< cv::Point2f >& non_homogeneous)
+{
+    non_homogeneous.resize(homogeneous.size());
+    for (size_t i = 0; i < non_homogeneous.size(); i++) {
+        non_homogeneous[i].x = homogeneous[i].x / homogeneous[i].z;
+        non_homogeneous[i].y = homogeneous[i].y / homogeneous[i].z;
+    }
+}
+
+// Transform a vector of 2D non-homogeneous points via an homography.
+std::vector<cv::Point2f> transform_via_homography(const std::vector<cv::Point2f>& points, const cv::Matx33f& homography)
+{
+    std::vector<cv::Point3f> ph;
+    to_homogeneous(points, ph);
+    for (size_t i = 0; i < ph.size(); i++) {
+        ph[i] = homography*ph[i];
+    }
+    std::vector<cv::Point2f> r;
+    from_homogeneous(ph, r);
+    return r;
+}
+
+// Find the bounding box of a vector of 2D non-homogeneous points.
+cv::Rect_<float> bounding_box(const std::vector<cv::Point2f>& p)
+{
+    cv::Rect_<float> r;
+    float x_min = std::min_element(p.begin(), p.end(), [](const cv::Point2f& lhs, const cv::Point2f& rhs) {return lhs.x < rhs.x; })->x;
+    float x_max = std::max_element(p.begin(), p.end(), [](const cv::Point2f& lhs, const cv::Point2f& rhs) {return lhs.x < rhs.x; })->x;
+    float y_min = std::min_element(p.begin(), p.end(), [](const cv::Point2f& lhs, const cv::Point2f& rhs) {return lhs.y < rhs.y; })->y;
+    float y_max = std::max_element(p.begin(), p.end(), [](const cv::Point2f& lhs, const cv::Point2f& rhs) {return lhs.y < rhs.y; })->y;
+    return cv::Rect_<float>(x_min, y_min, x_max - x_min, y_max - y_min);
+}
+
+// Warp the image src into the image dst through the homography H.
+// The resulting dst image contains the entire warped image, this
+// behaviour is the same of Octave's imperspectivewarp (in the 'image'
+// package) behaviour when the argument bbox is equal to 'loose'.
+// See http://octave.sourceforge.net/image/function/imperspectivewarp.html
+void homography_warp(const cv::Mat& src, const cv::Mat& H, cv::Mat& dst)
+{
+    std::vector< cv::Point2f > corners;
+    corners.push_back(cv::Point2f(0, 0));
+    corners.push_back(cv::Point2f(src.cols, 0));
+    corners.push_back(cv::Point2f(0, src.rows));
+    corners.push_back(cv::Point2f(src.cols, src.rows));
+
+    std::vector< cv::Point2f > projected = transform_via_homography(corners, H);
+    cv::Rect_<float> bb = bounding_box(projected);
+
+    cv::Mat_<double> translation = (cv::Mat_<double>(3, 3) << 1, 0, -bb.tl().x, 0, 1, -bb.tl().y, 0, 0, 1);
+
+    cv::warpPerspective(src, dst, translation*H, bb.size());
+}
 
 ImagePair
 ImagePair::rectify(std::string obj_name)
@@ -118,23 +216,29 @@ ImagePair::rectify(std::string obj_name)
         }
     }
 
+    cout << "Computing Rectification Matrix..." << endl;
     Mat H1(4, 4, img1.type());
     Mat H2(4, 4, img2.type());
     stereoRectifyUncalibrated(masked_points1, masked_points2, F, img1.size(), H1, H2);
 
-    // Create borders
-    Mat img1_borders, img2_borders;
-
-    copyMakeBorder(img1, img1_borders, img1.rows/2, img1.rows/2, img1.cols/2, img1.cols/2, BORDER_CONSTANT);
-    copyMakeBorder(img2, img2_borders, img2.rows/2, img2.rows/2, img2.cols/2, img2.cols/2, BORDER_CONSTANT);
-
     // Rectify images
-    Mat rectified1(img1_borders.size(), img1_borders.type());
-    warpPerspective(img1_borders, rectified1, H1, img1_borders.size());
-    imwrite(obj_name + "_left_rectified.jpg", rectified1);
+    cout << "Applying Rectification Matrix..." << endl;
+    Mat rectified1(img1.size(), img1.type());
+    homography_warp(img1, H1, rectified1);
 
-    Mat rectified2(img2_borders.size(), img2_borders.type());
-    warpPerspective(img2_borders, rectified2, H2, img2_borders.size());
+    Mat rectified2(img2.size(), img2.type());
+    homography_warp(img2, H2, rectified2);
+
+    copyMakeBorder(rectified1, rectified1, 0,
+                   max(rectified1.rows, rectified2.rows) - rectified1.rows, 0,
+                   max(rectified1.cols, rectified2.cols) - rectified1.cols,
+                   BORDER_CONSTANT);
+    copyMakeBorder(rectified2, rectified2, 0,
+                   max(rectified1.rows, rectified2.rows) - rectified2.rows, 0,
+                   max(rectified1.cols, rectified2.cols) - rectified2.cols,
+                   BORDER_CONSTANT);
+
+    imwrite(obj_name + "_left_rectified.jpg", rectified1);
     imwrite(obj_name + "_right_rectified.jpg", rectified2);
 
     drawEpipolarLines(masked_points1, masked_points2, F, obj_name);
@@ -146,6 +250,7 @@ void
 ImagePair::drawEpipolarLines(std::vector<cv::Point2f> points1,
     std::vector<cv::Point2f> points2, cv::Mat F, std::string obj_name)
 {
+    cout << "Drawing Epipolar lines..." << endl;
     // Draw epilines in rectified images
     time_t t;
     srand((unsigned) time(&t));
