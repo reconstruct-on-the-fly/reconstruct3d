@@ -201,22 +201,20 @@ DisparityMap::merge(DisparityMap left_disp, DisparityMap right_disp,
 
     cout << "Merging disparities..." << endl;
     Rect roi_left = Rect(0, 0, offset, rows);
+    Rect roi_right = Rect(right.cols - offset, 0, offset, right.rows);
     left(roi_left).copyTo(merged_maps(roi_left));
+    right(roi_right).copyTo(merged_maps(Rect(right.cols, 0, offset, rows)));
+
 
     for(int i = 0; i < rows; ++i)
     {
-        for (int j = offset; j < cols; ++j)
+        for (int j = offset; j < cols - offset; ++j)
         {
-            if (j <= left.cols)
-            {
-                merged_maps.at<uchar>(i, j) = max(left.at<uchar>(i, j),
-                                                  right.at<uchar>(i,
-                                                      j - offset));
-            }
-            else
-            {
-                merged_maps.at<uchar>(i, j) = right.at<uchar>(i, j - offset);
-            }
+            float alpha = (float)(j - offset) / (cols - offset - offset);
+            uchar l_pixel = left.at<uchar>(i, j);
+            uchar r_pixel = right.at<uchar>(i, j - offset);
+            merged_maps.at<uchar>(i, j) = ((1 - alpha) * l_pixel) +
+                                          (alpha * r_pixel);
         }
     }
 
