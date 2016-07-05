@@ -24,6 +24,7 @@ public:
                      int window_size, int offset);
     static DisparityMap merge(DisparityMap left, DisparityMap right,
                               int offset);
+    static int findOffset(cv::Mat left, cv::Mat right);
 
     cv::Mat getImage();
 

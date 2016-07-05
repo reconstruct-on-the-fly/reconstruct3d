@@ -3,6 +3,8 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/ximgproc/disparity_filter.hpp>
 #include <opencv2/ximgproc/edge_filter.hpp>
+#include <opencv2/xfeatures2d.hpp>
+#include <opencv2/features2d.hpp>
 #include "opencv2/stitching.hpp"
 #include <limits>
 #include <iostream>
@@ -223,4 +225,39 @@ DisparityMap::merge(DisparityMap left_disp, DisparityMap right_disp,
     imwrite("/vagrant/merged_disp.jpg", color_merged_maps);
 
     return DisparityMap(merged_maps);
+}
+
+int
+DisparityMap::findOffset(Mat left, Mat right)
+{
+    cout << "Finding offset..." << endl;
+    Ptr<Feature2D> f2d = xfeatures2d::SURF::create();
+    std::vector<KeyPoint> keypoints_1, keypoints_2;
+    f2d->detect(left, keypoints_1);
+    f2d->detect(right, keypoints_2);
+
+    Mat descriptors_1, descriptors_2;
+    f2d->compute(left, keypoints_1, descriptors_1);
+    f2d->compute(right, keypoints_2, descriptors_2);
+
+    FlannBasedMatcher matcher;
+    std::vector<DMatch> matches;
+    matcher.match(descriptors_1, descriptors_2, matches);
+
+    double avg_dist = 0;
+    int avg_count = 0;
+
+    for( int i = 0; i < descriptors_1.rows; i++ )
+    {
+        double dist = matches[i].distance;
+        auto pt1 = keypoints_1[matches[i].queryIdx].pt;
+        auto pt2 = keypoints_2[matches[i].trainIdx].pt;
+
+        if (abs(pt1.y - pt2.y) < 20)
+        {
+            avg_dist += abs(pt1.x - pt2.x);
+            ++avg_count;
+        }
+    }
+    return avg_dist / avg_count;
 }
