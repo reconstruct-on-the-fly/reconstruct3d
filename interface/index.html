@@ -12,16 +12,44 @@
 
       <md-card flex="70" style="margin:auto; max-width:700px;">
         <md-card-content>
-          <p>Images</p>
           <div layout="row" layout-align="space-around center">
             <md-input-container class="md-block" flex="45">
-              <label>Left image path</label>
-              <input ng-model="vm.image.left">
+              <label>Project Title</label>
+              <input ng-model="vm.project_title">
             </md-input-container>
-            <md-input-container class="md-block" flex="45">
-              <label>Right image path</label>
-              <input ng-model="vm.image.right">
-            </md-input-container>
+          </div>
+          <p>Images</p>
+          <div layout="row" layout-align="space-between center">
+            <md-switch ng-model="vm.imagePair" aria-label="Reconstruct Switch">
+              {{ vm.imagePair ? 'Image Pair' : 'Image Set' }}
+            </md-switch>
+          </div>
+
+          <div ng-show="vm.imagePair">
+            <div layout="row" layout-align="space-around center">
+              <md-input-container class="md-block" flex="45">
+                <label>Left image path</label>
+                <input ng-model="vm.image.left">
+              </md-input-container>
+              <md-input-container class="md-block" flex="45">
+                <label>Right image path</label>
+                <input ng-model="vm.image.right">
+              </md-input-container>
+            </div>
+          </div>
+          <div ng-show="!vm.imagePair">
+            <div layout="row" layout-align="space-around center">
+              <md-input-container class="md-block" flex="45">
+                <label>Image Folder</label>
+                <input ng-model="vm.image.left">
+              </md-input-container>
+            </div>
+          </div>
+
+          <div layout="row" layout-align="space-between center">
+            <md-switch ng-model="vm.rectify" aria-label="Reconstruct Switch">
+              Rectify Images
+            </md-switch>
           </div>
 
           <form name="disparityForm">
@@ -139,7 +167,7 @@
 
           <div layout="row" layout-align="end center">
             <md-button class="md-raised md-primary" id="reconstruct"
-                       ng-click="vm.printCommand()">
+                       ng-click="vm.printCommand()" ng-disabled="!vm.isComplete()">
               Reconstruct
             </md-button>
           </div>

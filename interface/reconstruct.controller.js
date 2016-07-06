@@ -32,8 +32,11 @@ angular.module('ReconstructApp', ['ngMaterial'])
             laplacescale: '',
             laplaceiterations: ''
         },
-
-        printCommand: printCommand
+        project_title: '',
+        rectify: false,
+        imagePair: true,
+        printCommand: printCommand,
+        isComplete: isComplete,
     });
 
     activate();
@@ -48,8 +51,19 @@ angular.module('ReconstructApp', ['ngMaterial'])
         ChildProcess.exec('echo "' + command +'" > log.txt');
     }
 
+    function isComplete() {
+        return vm.image.left !== '' && vm.project_title !== '' &&
+               ((vm.image.right !== '' && vm.imagePair) ||
+                (!vm.imagePair));
+    }
+
     function printCommand() {
-        vm.command += ' ' + vm.image.left + ' ' +  vm.image.right;
+        if(vm.imagePair)
+            vm.command += ' --image-pair ' + vm.image.left + ' ' +  vm.image.right;
+        else
+            vm.command += ' --set ' + vm.image.left;
+
+        vm.command += ' --project-title ' + vm.project_title;
 
         if(vm.disparity === false) {
             vm.command += ' --no-disparity';
@@ -62,6 +76,9 @@ angular.module('ReconstructApp', ['ngMaterial'])
         }
         if(vm.disp.noise.filter === false) {
             vm.command += ' --no-noise-reduction-filter ';
+        }
+        if(vm.rectify === true) {
+            vm.command += ' --with-rectification ';
         }
 
         vm.command += ' --disparity-range ' + vm.disp.min + ' ' + vm.disp.max;
