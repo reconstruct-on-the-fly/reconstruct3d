@@ -4,7 +4,7 @@ angular.module('ReconstructApp', ['ngMaterial'])
     var vm = this;
 
     angular.extend(vm, {
-        command: 'reconstruct3d ',
+        command: '../reconstruct3d ',
         image: {
             left: '',
             right: ''
@@ -49,6 +49,7 @@ angular.module('ReconstructApp', ['ngMaterial'])
     function executeCommand (command) {
         const ChildProcess = require('child_process');
         ChildProcess.exec('echo "' + command +'" > log.txt');
+        ChildProcess.exec(command + ' >> log.txt');
     }
 
     function isComplete() {
