@@ -5,7 +5,7 @@ INCLUDEDIR=include
 LDFLAGS=-I$(INCLUDEDIR) -I3rd_party/Fast-Quadric-Mesh-Simplification `pkg-config --cflags --libs opencv`
 
 SOURCEDIR=src
-_SOURCES=main.cpp depth_map.cpp mesh.cpp disparity_map.cpp camera.cpp image_pair.cpp
+_SOURCES=main.cpp depth_map.cpp mesh.cpp disparity_map.cpp camera.cpp image_pair.cpp stitcher.cpp
 SOURCES=$(patsubst %,$(SOURCEDIR)/%,$(_SOURCES))
 
 EXECUTABLE=reconstruct3d

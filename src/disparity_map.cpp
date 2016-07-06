@@ -2,10 +2,8 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/ximgproc/disparity_filter.hpp>
-#include <opencv2/ximgproc/edge_filter.hpp>
 #include <opencv2/xfeatures2d.hpp>
 #include <opencv2/features2d.hpp>
-#include "opencv2/stitching.hpp"
 #include <limits>
 #include <iostream>
 
@@ -189,75 +187,4 @@ Mat
 DisparityMap::getImage()
 {
     return m_image;
-}
-
-DisparityMap
-DisparityMap::merge(DisparityMap left_disp, DisparityMap right_disp,
-                    int offset)
-{
-    Mat left = left_disp.getImage();
-    Mat right = right_disp.getImage();
-    const int rows = left.rows;
-    const int cols = left.cols + offset;
-    Mat merged_maps = Mat(rows, cols, CV_8UC1);
-
-    cout << "Merging disparities..." << endl;
-    Rect roi_left = Rect(0, 0, offset, rows);
-    Rect roi_right = Rect(right.cols - offset, 0, offset, right.rows);
-    left(roi_left).copyTo(merged_maps(roi_left));
-    right(roi_right).copyTo(merged_maps(Rect(right.cols, 0, offset, rows)));
-
-
-    for(int i = 0; i < rows; ++i)
-    {
-        for (int j = offset; j < cols - offset; ++j)
-        {
-            float alpha = (float)(j - offset) / (cols - offset - offset);
-            uchar l_pixel = left.at<uchar>(i, j);
-            uchar r_pixel = right.at<uchar>(i, j - offset);
-            merged_maps.at<uchar>(i, j) = ((1 - alpha) * l_pixel) +
-                                          (alpha * r_pixel);
-        }
-    }
-
-    Mat color_merged_maps;
-    applyColorMap(merged_maps, color_merged_maps, COLORMAP_JET);
-    imwrite("/vagrant/merged_disp.jpg", color_merged_maps);
-
-    return DisparityMap(merged_maps);
-}
-
-int
-DisparityMap::findOffset(Mat left, Mat right)
-{
-    cout << "Finding offset..." << endl;
-    Ptr<Feature2D> f2d = xfeatures2d::SURF::create();
-    std::vector<KeyPoint> keypoints_1, keypoints_2;
-    f2d->detect(left, keypoints_1);
-    f2d->detect(right, keypoints_2);
-
-    Mat descriptors_1, descriptors_2;
-    f2d->compute(left, keypoints_1, descriptors_1);
-    f2d->compute(right, keypoints_2, descriptors_2);
-
-    FlannBasedMatcher matcher;
-    std::vector<DMatch> matches;
-    matcher.match(descriptors_1, descriptors_2, matches);
-
-    double avg_dist = 0;
-    int avg_count = 0;
-
-    for( int i = 0; i < descriptors_1.rows; i++ )
-    {
-        double dist = matches[i].distance;
-        auto pt1 = keypoints_1[matches[i].queryIdx].pt;
-        auto pt2 = keypoints_2[matches[i].trainIdx].pt;
-
-        if (abs(pt1.y - pt2.y) < 20)
-        {
-            avg_dist += abs(pt1.x - pt2.x);
-            ++avg_count;
-        }
-    }
-    return avg_dist / avg_count;
 }
