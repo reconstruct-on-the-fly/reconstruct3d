@@ -11,26 +11,26 @@ angular.module('ReconstructApp', ['ngMaterial'])
         },
         disparity: false,
         disp: {
-            min: 1,
-            max: 2,
-            size: 1,
+            min: '',
+            max: '',
+            size: '',
             wls: {
                 filter: false,
-                lambda: 1,
-                sigma:1
+                lambda: '',
+                sigma:''
             },
             noise: {
                 filter: false,
-                size: 1,
-                threshold: 1
+                size: '',
+                threshold: ''
             }
         },
         reconstruct: false,
         obj: {
-            height: 1,
-            simplify: 0.1,
-            laplacescale: 0.1,
-            laplaceiterations: 2
+            height: '',
+            simplify: '',
+            laplacescale: '',
+            laplaceiterations: ''
         },
 
         printCommand: printCommand
@@ -40,14 +40,18 @@ angular.module('ReconstructApp', ['ngMaterial'])
 
     //////
     function activate() {
-        console.log('--');
+    }
+
+    function executeCommand (command) {
+        const ChildProcess = require('child_process');
+        ChildProcess.exec('echo "' + command +'" > log.txt');
     }
 
     function printCommand() {
         vm.command += ' ' + vm.image.left + ' ' +  vm.image.right;
 
         if(vm.disparity === false) {
-            vm.command += ' --no-disparity ';
+            vm.command += ' --no-disparity';
         }
         if(vm.reconstruct === false) {
             vm.command += ' --no-reconstruction ';
@@ -66,10 +70,12 @@ angular.module('ReconstructApp', ['ngMaterial'])
 
         vm.command += ' --obj-height ' + vm.obj.height;
         vm.command += ' --laplace-scale ' + vm.obj.laplacescale;
-        vm.command += ' --laplacce-iterations ' + vm.obj.laplaceiterations;
+        vm.command += ' --laplace-iterations ' + vm.obj.laplaceiterations;
         vm.command += ' --obj-simplify ' + vm.obj.simplify;
 
         console.log(vm.command);
+
+        executeCommand(vm.command);
     }
 
 });
