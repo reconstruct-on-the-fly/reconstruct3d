@@ -28,7 +28,7 @@ const std::string USAGE = "usage: reconstruct3d <left_image> <right_image> "
                           "\n\t[--simplify fraction] "
                           "\n\t[--no-reconstruction] "
                           "\n\t[--no-disparity] "
-                          "\n\t[--no-rectification] "
+                          "\n\t[--with-rectification] "
                           "\n\t[--help | -h] "
                           "\n";
 
@@ -57,8 +57,8 @@ const std::string HELP = "\n\n Parameters help"
                           "\n\t\t Disables reconstruction process "
                           "\n\n\t[--no-disparity] "
                           "\n\t\t Disables disparity correspondence "
-                          "\n\n\t[--no-rectification] "
-                          "\n\t\t Disables rectfication "
+                          "\n\n\t[--with-rectification] "
+                          "\n\t\t Enables rectfication "
                           "\n\n\t[--help | -h] "
                           "\n";
 
@@ -117,7 +117,7 @@ Options parseArgs(int argc, char *argv[])
     options.obj_name         = argv[3];
 
     // Default Values
-    options.no_rectification = false;
+    options.no_rectification = true;
 
     options.disparity_window_size = 3;
     options.min_disparity = 0;
@@ -139,11 +139,11 @@ Options parseArgs(int argc, char *argv[])
     for (int i = 4; i < argc; ++i)
     {
         // Rectification Arguments
-        if (!strcmp(argv[i], "--no-rectification"))
-            options.no_rectification = true;
+        if (!strcmp(argv[i], "--with-rectification"))
+            options.no_rectification = false;
 
         // Disparity Arguments
-        if (!strcmp(argv[i], "--disparity-range"))
+        else if (!strcmp(argv[i], "--disparity-range"))
         {
             options.min_disparity = atoi(argv[++i]);
             options.max_disparity = atoi(argv[++i]);
@@ -230,7 +230,6 @@ int main(int argc, char** argv)
     {
         rectifed_pair  = ImagePair(left_image,
                                    right_image).rectify(options.obj_name);
-        // rectifed_pair.rectify(options.obj_name + "2");
     }
     else
         rectifed_pair = ImagePair(left_image, right_image);

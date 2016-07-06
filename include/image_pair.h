@@ -18,8 +18,8 @@ public:
 
 private:
     void drawEpipolarLines(std::vector<cv::Point2f> points1,
-                           std::vector<cv::Point2f> points2, cv::Mat F,
-                           std::string obj_name);
+        std::vector<cv::Point2f> points2, cv::Mat &out1, cv::Mat &out2,
+        cv::Mat F, std::string obj_name);
 };
 
 #endif

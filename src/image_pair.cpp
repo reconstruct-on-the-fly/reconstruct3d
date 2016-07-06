@@ -217,9 +217,28 @@ ImagePair::rectify(std::string obj_name)
     }
 
     cout << "Computing Rectification Matrix..." << endl;
+    Mat lines_out1(img1.size(), img1.type());
+    Mat lines_out2(img2.size(), img2.type());
+    drawEpipolarLines(masked_points1, masked_points2, lines_out1, lines_out2,
+                      F, obj_name);
+
+    Mat H1_lines(4, 4, lines_out1.type());
+    Mat H2_lines(4, 4, lines_out2.type());
+    stereoRectifyUncalibrated(masked_points1, masked_points2, F, img1.size(),
+                              H1_lines, H2_lines);
+
+    warpPerspective(lines_out1, lines_out1, H1_lines, lines_out1.size());
+    imwrite(obj_name + "_left_epipolar_lines_lines_out.jpg", lines_out1);
+
+    warpPerspective(lines_out2, lines_out2, H2_lines, lines_out2.size());
+    imwrite(obj_name + "_right_epipolar_lines_lines_out.jpg", lines_out2);
+
+
+
     Mat H1(4, 4, img1.type());
     Mat H2(4, 4, img2.type());
-    stereoRectifyUncalibrated(masked_points1, masked_points2, F, img1.size(), H1, H2);
+    stereoRectifyUncalibrated(masked_points1, masked_points2, F, img1.size(),
+                              H1, H2);
 
     // Rectify images
     cout << "Applying Rectification Matrix..." << endl;
@@ -241,22 +260,21 @@ ImagePair::rectify(std::string obj_name)
     imwrite(obj_name + "_left_rectified.jpg", rectified1);
     imwrite(obj_name + "_right_rectified.jpg", rectified2);
 
-    drawEpipolarLines(masked_points1, masked_points2, F, obj_name);
-
     return ImagePair(rectified1, rectified2);
 }
 
 void
 ImagePair::drawEpipolarLines(std::vector<cv::Point2f> points1,
-    std::vector<cv::Point2f> points2, cv::Mat F, std::string obj_name)
+    std::vector<cv::Point2f> points2, cv::Mat &out1, cv::Mat &out2, cv::Mat F,
+    std::string obj_name)
 {
     cout << "Drawing Epipolar lines..." << endl;
     // Draw epilines in rectified images
     time_t t;
     srand((unsigned) time(&t));
 
-    Mat  left_lines = img1.clone();
-    Mat right_lines = img2.clone();
+    out1 = img1.clone();
+    out2 = img2.clone();
 
     vector<cv::Vec3f> epilines1, epilines2;
 
@@ -265,23 +283,23 @@ ImagePair::drawEpipolarLines(std::vector<cv::Point2f> points1,
 
     for(auto line: epilines1)
     {
-        cv::line(left_lines,
+        cv::line(out1,
                  cv::Point(0,-line[2]/line[1]),
                  cv::Point(img1.cols,-(line[2]+
                                        line[0]*img1.cols)/line[1]),
                  cv::Scalar(rand() % 255, rand() % 255, rand() % 255));
     }
 
-    imwrite(obj_name + "_left_epipolar_lines.jpg", left_lines);
+    imwrite(obj_name + "_left_epipolar_lines.jpg", out1);
 
     for(auto line: epilines2)
     {
-        cv::line(right_lines,
+        cv::line(out2,
                  cv::Point(0,-line[2]/line[1]),
                  cv::Point(img2.cols,-(line[2]+
                                        line[0]*img2.cols)/line[1]),
                  cv::Scalar(rand() % 255, rand() % 255, rand() % 255));
     }
 
-    imwrite(obj_name + "_right_epipolar_lines.jpg", right_lines);
+    imwrite(obj_name + "_right_epipolar_lines.jpg", out2);
 }
