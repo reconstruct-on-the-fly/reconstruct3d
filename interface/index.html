@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Reconstruct on the fly</title>
+    <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/angular_material/1.1.0-rc2/angular-material.min.css">
+  </head>
+  <body ng-app="ReconstructApp">
+
+    <md-content class="md-padding">
+      <p class="md-padding" style="weight:bold;" flex-offset="20">Reconstruct on the fly</p>
+
+      <md-card flex="70" style="margin:auto; max-width:700px;">
+        <md-card-content>
+          <p>Images</p>
+          <div layout="row" layout-align="space-around center">
+            <md-input-container class="md-block" flex="45">
+              <label>Left image path</label>
+              <input ng-model="image.left">
+            </md-input-container>
+            <md-input-container class="md-block" flex="45">
+              <label>Right image path</label>
+              <input ng-model="image.right">
+            </md-input-container>
+          </div>
+
+          <div layout="row" layout-align="space-between center">
+            <p>Disparity parameters</p>
+            <md-switch ng-model="disparity" aria-label="Disparity Switch">
+              Disparity
+            </md-switch>
+          </div>
+
+          <div layout="row" layout-align="space-between center">
+            <md-input-container class="md-block" flex="30">
+              <label>Window size</label>
+              <input type="number" ng-model="disp.size" ng-disabled="!disparity">
+            </md-input-container>
+            <md-input-container class="md-block" flex="30">
+              <label>Min disparity</label>
+              <input type="number" ng-model="disp.min" ng-disabled="!disparity">
+            </md-input-container>
+            <md-input-container class="md-block" flex="30">
+              <label>Max disparity</label>
+              <input type="number" ng-model="disp.max" ng-disabled="!disparity">
+            </md-input-container>
+          </div>
+
+          <div layout="row" layout-align="space-between center">
+            <md-checkbox ng-model="disp.wls.filter" aria-label="WLS filter Switch" ng-disabled="!disparity" flex>
+              WLS filter
+            </md-checkbox>
+            <md-input-container class="md-bloc md-padding" flex="35">
+              <label>Lambda</label>
+              <input type="number" ng-model="disp.wls.lambda" ng-disabled="!disp.wls.filter || !disparity">
+            </md-input-container>
+            <md-input-container class="md-block md-padding" flex="35">
+              <label>Sigma</label>
+              <input type="number" ng-model="disp.wls.sigma" ng-disabled="!disp.wls.filter || !disparity">
+            </md-input-container>
+          </div>
+
+          <div layout="row" layout-align="space-between center">
+            <md-checkbox ng-model="disp.noise.filter" aria-label="Noise filter Switch" ng-disabled="!disparity" flex>
+              Noise reduction
+            </md-checkbox>
+            <md-input-container class="md-block md-padding" flex="35">
+              <label>Window size</label>
+              <input type="number" ng-model="disp.noise.size" ng-disabled="disp.noise.filter || !disparity">
+            </md-input-container>
+            <md-input-container class="md-block md-padding" flex="35">
+              <label>Threshold</label>
+              <input type="number" ng-model="disp.noise.threshold" ng-disabled="!disp.noise.filter || !disparity">
+            </md-input-container>
+          </div>
+
+          <div layout="row" layout-align="space-between center">
+            <p>Reconstruction parameters</p>
+            <md-switch ng-model="reconstruct" aria-label="Reconstruct Switch">
+              Reconstruct
+            </md-switch>
+          </div>
+
+          <div layout="row" layout-align="space-around center">
+            <md-input-container class="md-block" flex="45">
+              <label>Object height</label>
+              <input type="number" ng-model="obj.height" ng-disabled="!reconstruct">
+            </md-input-container>
+            <md-input-container class="md-block" flex="45">
+              <label>Simplify object</label>
+              <input type="number" ng-model="obj.simplify" ng-disabled="!reconstruct">
+            </md-input-container>
+          </div>
+
+          <div layout="row" layout-align="space-around center">
+            <md-input-container class="md-block" flex="45">
+              <label>Laplacian smooth scale</label>
+              <input type="number" ng-model="obj.laplacescale" ng-disabled="!reconstruct">
+            </md-input-container>
+            <md-input-container class="md-block" flex="45">
+              <label>Laplacian iterations</label>
+              <input type="number" ng-model="obj.laplaceiterations" ng-disabled="!reconstruct">
+            </md-input-container>
+          </div>
+
+          <div layout="row" layout-align="end center">
+            <md-button class="md-raised md-primary" id="reconstruct">Reconstruct</md-button>
+          </div>
+        </md-card-content>
+      </md-card>
+    </md-content>
+
+    <script>
+      require('./reconstructapi.js');
+    </script>
+    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.3/angular.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.3/angular-animate.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.3/angular-aria.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.3/angular-messages.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/angular_material/1.1.0-rc2/angular-material.min.js"></script>
+    <script type="text/javascript">
+      angular.module('ReconstructApp', ['ngMaterial']);
+    </script>
+  </body>
+</html
