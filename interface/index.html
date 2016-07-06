@@ -25,111 +25,116 @@
           </div>
 
           <form name="disparityForm">
-          <div layout="row" layout-align="space-between center">
-            <p>Disparity parameters</p>
-            <md-switch ng-model="vm.disparity" aria-label="Disparity Switch">
-              Disparity
-            </md-switch>
-          </div>
+            <div layout="row" layout-align="space-between center">
+              <p>Disparity parameters</p>
+              <md-switch ng-model="vm.disparity" aria-label="Disparity Switch">
+                Disparity
+              </md-switch>
+            </div>
 
-          <div layout="row" layout-align="space-between center">
-            <md-input-container class="md-block" flex="30">
-              <label>Window size</label>
-              <input type="number" ng-model="vm.disp.size" ng-disabled="!vm.disparity">
-            </md-input-container>
-            <md-input-container class="md-block" flex="30">
-              <label>Min disparity</label>
-              <input type="number" ng-model="vm.disp.min" ng-disabled="!vm.disparity">
-            </md-input-container>
-            <md-input-container class="md-block" flex="30">
-              <label>Max disparity</label>
-              <input type="number" ng-model="vm.disp.max" ng-disabled="!vm.disparity">
-            </md-input-container>
-          </div>
+            <div layout="row" layout-align="space-between center">
+              <md-input-container class="md-block" flex="30">
+                <label>Window size</label>
+                <input type="number" ng-model="vm.disp.size" ng-disabled="!vm.disparity">
+              </md-input-container>
+              <md-input-container class="md-block" flex="30">
+                <label>Min disparity</label>
+                <input type="number" ng-model="vm.disp.min" ng-disabled="!vm.disparity">
+              </md-input-container>
+              <md-input-container class="md-block" flex="30">
+                <label>Max disparity</label>
+                <input type="number" ng-model="vm.disp.max"
+                       ng-disabled="!vm.disparity" name="maxdisp"
+                       min="vm.disp.min">
+                <div ng-messages="dispatityForm.maxdisp.$error">
+                  <div ng-message="min" ng-if="vm.disp.max < vm.disp.min">Max must be greater than min</div>
+                </div>
+              </md-input-container>
+            </div>
 
-          <div layout="row" layout-align="space-between center">
-            <md-checkbox ng-model="vm.disp.wls.filter" aria-label="WLS filter Switch" ng-disabled="!vm.disparity" flex>
-              WLS filter
-            </md-checkbox>
-            <md-input-container class="md-bloc md-padding" flex="35">
-              <label>Lambda</label>
-              <input type="number" ng-model="vm.disp.wls.lambda"
-                     ng-disabled="!vm.disp.wls.filter || !vm.disparity">
-            </md-input-container>
-            <md-input-container class="md-block md-padding" flex="35">
-              <label>Sigma</label>
-              <input type="number" ng-model="vm.disp.wls.sigma" name="sigma"
-                     ng-disabled="!vm.disp.wls.filter || !vm.disparity"
-                     min="0.8" max="2">
-              <div ng-messages="dispatityForm.sigma.$error">
-                <div ng-message="min">Minimun is 0.8</div>
-                <div ng-message="max">Maximun is 2</div>
-              </div>
-            </md-input-container>
-          </div>
+            <div layout="row" layout-align="space-between center">
+              <md-checkbox ng-model="vm.disp.wls.filter" aria-label="WLS filter Switch" ng-disabled="!vm.disparity" flex>
+                WLS filter
+              </md-checkbox>
+              <md-input-container class="md-bloc md-padding" flex="35">
+                <label>Lambda</label>
+                <input type="number" ng-model="vm.disp.wls.lambda"
+                       ng-disabled="!vm.disp.wls.filter || !vm.disparity">
+              </md-input-container>
+              <md-input-container class="md-block md-padding" flex="35">
+                <label>Sigma</label>
+                <input type="number" ng-model="vm.disp.wls.sigma" name="sigma"
+                       ng-disabled="!vm.disp.wls.filter || !vm.disparity"
+                       min="0.8" max="2" step="0.1">
+                <div ng-messages="dispatityForm.sigma.$error">
+                  <div ng-message="min">Minimun is 0.8</div>
+                  <div ng-message="max">Maximun is 2</div>
+                </div>
+              </md-input-container>
+            </div>
 
-          <div layout="row" layout-align="space-between center">
-            <md-checkbox ng-model="vm.disp.noise.filter" aria-label="Noise filter Switch" ng-disabled="!vm.disparity" flex>
-              Noise reduction
-            </md-checkbox>
-            <md-input-container class="md-block md-padding" flex="35">
-              <label>Window size</label>
-              <input type="number" ng-model="vm.disp.noise.size" ng-disabled="!vm.disp.noise.filter || !vm.disparity">
-            </md-input-container>
-            <md-input-container class="md-block md-padding" flex="35">
-              <label>Threshold</label>
-              <input type="number" ng-model="vm.disp.noise.threshold" name="threshold"
-                     ng-disabled="!vm.disp.noise.filter || !vm.disparity"
-                     min="0" max="1">
-              <div ng-messages="dispatityForm.threshold.$error">
-                <div ng-message="min">Minimun is 0</div>
-                <div ng-message="max">Maximun is 1</div>
-              </div>
-            </md-input-container>
-          </div>
+            <div layout="row" layout-align="space-between center">
+              <md-checkbox ng-model="vm.disp.noise.filter" aria-label="Noise filter Switch" ng-disabled="!vm.disparity" flex>
+                Noise reduction
+              </md-checkbox>
+              <md-input-container class="md-block md-padding" flex="35">
+                <label>Window size</label>
+                <input type="number" ng-model="vm.disp.noise.size" ng-disabled="!vm.disp.noise.filter || !vm.disparity">
+              </md-input-container>
+              <md-input-container class="md-block md-padding" flex="35">
+                <label>Threshold</label>
+                <input type="number" ng-model="vm.disp.noise.threshold" name="threshold"
+                       ng-disabled="!vm.disp.noise.filter || !vm.disparity"
+                       min="0" max="1" step="0.1">
+                <div ng-messages="dispatityForm.threshold.$error">
+                  <div ng-message="min">Minimun is 0</div>
+                  <div ng-message="max">Maximun is 1</div>
+                </div>
+              </md-input-container>
+            </div>
           </form>
 
           <form name="reconstructForm">
-          <div layout="row" layout-align="space-between center">
-            <p>Reconstruction parameters</p>
-            <md-switch ng-model="vm.reconstruct" aria-label="Reconstruct Switch">
-              Reconstruct
-            </md-switch>
-          </div>
+            <div layout="row" layout-align="space-between center">
+              <p>Reconstruction parameters</p>
+              <md-switch ng-model="vm.reconstruct" aria-label="Reconstruct Switch">
+                Reconstruct
+              </md-switch>
+            </div>
 
-          <div layout="row" layout-align="space-around center">
-            <md-input-container class="md-block" flex="45">
-              <label>Object height</label>
-              <input type="number" ng-model="vm.obj.height" ng-disabled="!vm.reconstruct">
-            </md-input-container>
-            <md-input-container class="md-block" flex="45">
-              <label>Simplify object</label>
-              <input type="number" ng-model="vm.obj.simplify" name="simplify"
-                     ng-disabled="!vm.reconstruct"
-                     min="0" max="1">
-                <div ng-messages="reconstructForm.simplify.$error">
-                  <div ng-message="min">Minimun is 0</div>
-                  <div ng-message="max">Maximun is 1</div>
-                </div>
-            </md-input-container>
-          </div>
+            <div layout="row" layout-align="space-around center">
+              <md-input-container class="md-block" flex="45">
+                <label>Object height</label>
+                <input type="number" ng-model="vm.obj.height" ng-disabled="!vm.reconstruct">
+              </md-input-container>
+              <md-input-container class="md-block" flex="45">
+                <label>Simplify object</label>
+                <input type="number" ng-model="vm.obj.simplify" name="simplify"
+                       ng-disabled="!vm.reconstruct"
+                       min="0" max="1" step="0.1">
+                  <div ng-messages="reconstructForm.simplify.$error">
+                    <div ng-message="min">Minimun is 0</div>
+                    <div ng-message="max">Maximun is 1</div>
+                  </div>
+              </md-input-container>
+            </div>
 
-          <div layout="row" layout-align="space-around center">
-            <md-input-container class="md-block" flex="45">
-              <label>Laplacian smooth scale</label>
-              <input type="number" ng-model="vm.obj.laplacescale" name="laplace"
-                     ng-disabled="!vm.reconstruct"
-                     min="0" max="1">
-                <div ng-messages="reconstructForm.laplace.$error">
-                  <div ng-message="min">Minimun is 0</div>
-                  <div ng-message="max">Maximun is 1</div>
-                </div>
-            </md-input-container>
-            <md-input-container class="md-block" flex="45">
-              <label>Laplacian iterations</label>
-              <input type="number" ng-model="vm.obj.laplaceiterations" ng-disabled="!vm.reconstruct">
-            </md-input-container>
-          </div>
+            <div layout="row" layout-align="space-around center">
+              <md-input-container class="md-block" flex="45">
+                <label>Laplacian smooth scale</label>
+                <input type="number" ng-model="vm.obj.laplacescale" name="laplace"
+                       ng-disabled="!vm.reconstruct"
+                       min="0" max="1" step="0.1">
+                  <div ng-messages="reconstructForm.laplace.$error">
+                    <div ng-message="min">Minimun is 0</div>
+                    <div ng-message="max">Maximun is 1</div>
+                  </div>
+              </md-input-container>
+              <md-input-container class="md-block" flex="45">
+                <label>Laplacian iterations</label>
+                <input type="number" ng-model="vm.obj.laplaceiterations" ng-disabled="!vm.reconstruct">
+              </md-input-container>
+            </div>
           </form>
 
           <div layout="row" layout-align="end center">
