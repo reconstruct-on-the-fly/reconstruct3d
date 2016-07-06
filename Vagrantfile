@@ -2,7 +2,7 @@
 # vi: set ft=ruby :
 
 Vagrant.configure(2) do |config|
-  config.vm.box = "debian/jessie64"
+  config.vm.box = "opencv3"
   config.ssh.forward_agent = true
 
   config.vm.provider "virtualbox" do |vb|
