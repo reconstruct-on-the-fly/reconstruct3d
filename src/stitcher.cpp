@@ -15,7 +15,7 @@ DisparityMap
 Stitcher::merge(vector<DisparityMap> maps, string objname)
 {
     DisparityMap merged_disp = maps.at(0);
-    for (int i=1; i<maps.size(); ++i)
+    for (size_t i=1; i<maps.size(); ++i)
     {
         merged_disp = Stitcher::mergePair(merged_disp, maps.at(i));
     }
