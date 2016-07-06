@@ -2,6 +2,7 @@
 #include <cstring>
 #include <string>
 #include <algorithm>
+#include <glob.h>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -9,6 +10,7 @@
 #include "camera.h"
 #include "image_pair.h"
 #include "disparity_map.h"
+#include "stitcher.h"
 #include "depth_map.h"
 #include "mesh.h"
 
@@ -16,8 +18,10 @@ using namespace cv;
 using namespace std;
 
 // Command line instructions
-const std::string USAGE = "usage: reconstruct3d <left_image> <right_image> "
-                          "<obj_name> "
+const std::string USAGE = "usage: reconstruct3d "
+                          "\n\t[--project-title project_title] "
+                          "\n\t[--image-pair left right] "
+                          "\n\t[--set folder_path] "
                           "\n\t[--disparity-range min max] "
                           "\n\t[--disparity-window size] "
                           "\n\t[--no-wls-filter | --wls-filter lambda sigma] "
@@ -64,8 +68,10 @@ const std::string HELP = "\n\n Parameters help"
 
 // User defined renderer configuration
 struct Options {
+    std::string project_title;
+    bool image_pair;
     std::string left_image_path, right_image_path;
-    std::string obj_name;
+    std::string folder_path;
 
     //Rectification
     bool no_rectification;
@@ -90,7 +96,7 @@ struct Options {
 
 Options parseArgs(int argc, char *argv[])
 {
-    if (argc < 4)
+    if (argc < 2)
     {
         for (int i = 1; i < argc; ++i)
         {
@@ -109,16 +115,9 @@ Options parseArgs(int argc, char *argv[])
 
     Options options;
 
-    // Reading Image Pair
-    options.left_image_path  = argv[1];
-    options.right_image_path = argv[2];
-
-    // Reading output file name
-    options.obj_name         = argv[3];
-
     // Default Values
     options.no_rectification = true;
-
+    options.project_title = "project";
     options.disparity_window_size = 3;
     options.min_disparity = 0;
     options.max_disparity = 160;
@@ -136,11 +135,28 @@ Options parseArgs(int argc, char *argv[])
     options.obj_simplification_fraction = 0.2; // 80%
     options.no_reconstruction = false;
 
-    for (int i = 4; i < argc; ++i)
+    for (int i = 1; i < argc; ++i)
     {
         // Rectification Arguments
         if (!strcmp(argv[i], "--with-rectification"))
             options.no_rectification = false;
+
+        // Input Arguments
+        else if (!strcmp(argv[i], "--project-title"))
+        {
+            options.project_title = string(argv[++i]);
+        }
+        else if (!strcmp(argv[i], "--image-pair"))
+        {
+            options.image_pair = true;
+            options.left_image_path = string(argv[++i]);
+            options.right_image_path = string(argv[++i]);
+        }
+        else if (!strcmp(argv[i], "--set"))
+        {
+            options.image_pair = false;
+            options.folder_path = string(argv[++i]);
+        }
 
         // Disparity Arguments
         else if (!strcmp(argv[i], "--disparity-range"))
@@ -216,43 +232,97 @@ cv::Mat loadImage(std::string filename)
     return image;
 }
 
+vector<cv::Mat> loadImages(std::string folder)
+{
+    vector<cv::Mat> images;
+    vector<String> filenames;
+    glob(folder, filenames);
+
+    for (string filename : filenames)
+    {
+        images.push_back(loadImage(filename));
+    }
+
+    if (images.empty())
+    {
+        std::cout << "ERROR: Could not find any images in " << folder
+                  << endl;
+        std::cout << USAGE;
+        exit(EXIT_FAILURE);
+    }
+
+    return images;
+}
+
 int main(int argc, char** argv)
 {
     auto options = parseArgs(argc, argv);
 
-    Mat left_image = loadImage(options.left_image_path);
-    Mat right_image = loadImage(options.right_image_path);
+    vector<Mat> images;
+    if (options.image_pair)
+    {
+        images.push_back(loadImage(options.left_image_path));
+        images.push_back(loadImage(options.right_image_path));
+    }
+    else
+    {
+        images = loadImages(options.folder_path);
+    }
 
     /* Image Rectification */
     ImagePair rectifed_pair;
 
-    if(!options.no_rectification)
+    if(!options.no_rectification && options.image_pair)
     {
-        rectifed_pair  = ImagePair(left_image,
-                                   right_image).rectify(options.obj_name);
+        Mat left_image = loadImage(options.left_image_path);
+        Mat right_image = loadImage(options.right_image_path);
+
+        rectifed_pair  = ImagePair(images[0], images[1]).rectify(options.project_title);
     }
     else
-        rectifed_pair = ImagePair(left_image, right_image);
-
-    Mat disparity_image;
+        rectifed_pair = ImagePair(images[0], images[1]);
 
     /* Disparity Map */
+    Mat disparityImage;
+
     if (!options.no_disparity)
     {
-        DisparityMap disparityMap = DisparityMap::generateDisparityMap(
-                rectifed_pair.img1, rectifed_pair.img2, options.obj_name,
-                options.disparity_window_size, options.min_disparity, options.max_disparity,
-                options.wls_filter, options.wls_lambda, options.wls_sigma,
-                options.noise_reduction_filter, options.noise_reduction_window_size, options.noise_reduction_threshold
-        );
-        disparity_image = disparityMap.getImage();
+        if (options.image_pair)
+        {
+            DisparityMap disparityMap = DisparityMap::generateDisparityMap(
+                    images[0], images[1], options.project_title,
+                    options.disparity_window_size, options.min_disparity,options.max_disparity,
+                    options.wls_filter, options.wls_lambda, options.wls_sigma,
+                    options.noise_reduction_filter, options.noise_reduction_window_size, 
+                    options.noise_reduction_threshold);
+
+            disparityImage = disparityMap.getImage();
+        } 
+        else
+        {
+            vector<DisparityMap> maps;
+
+            for (size_t i = 0; i < images.size() - 1; i++)
+            {
+                DisparityMap disparityMap = DisparityMap::generateDisparityMap(
+                   images[i], images[i+1], options.project_title+to_string(i),
+                   options.disparity_window_size, options.min_disparity,options.max_disparity,
+                   options.wls_filter, options.wls_lambda, options.wls_sigma,
+                   options.noise_reduction_filter, options.noise_reduction_window_size, 
+                   options.noise_reduction_threshold);
+                maps.push_back(disparityMap);
+            }
+
+            DisparityMap mergedDisp = Stitcher::merge(maps, options.project_title);
+            disparityImage = mergedDisp.getImage();
+        }
     }
     else
-        disparity_image = rectifed_pair.img1;
+        disparityImage = images[0];
 
     if(!options.no_reconstruction)
     {
-        Mesh().generateMesh(disparity_image, options.obj_name,
+        Mesh().generateMesh(disparityImage, options.project_title,
                             options.obj_max_height, options.obj_laplace_scale,
                             options.obj_laplace_iterations,
                             options.obj_simplification_fraction);
