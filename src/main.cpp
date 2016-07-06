@@ -37,6 +37,12 @@ const std::string USAGE = "usage: reconstruct3d "
                           "\n";
 
 const std::string HELP = "\n\n Parameters help"
+                          "\n\t[--project-title project_title] "
+                          "\n\t\t Defines the name of the current project"
+                          "\n\t[--image-pair left right] "
+                          "\n\t\t Receives 2 images to reconstruct the model"
+                          "\n\t[--set folder_path] "
+                          "\n\t\t Receives a set of images to reconstruct the model"
                           "\n\t[--disparity-range min max] "
                           "\n\t\t Minimum and maximum disparity must be positive and min > max"
                           "\n\n\t[--disparity-window size] "

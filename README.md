@@ -25,7 +25,10 @@ for mesh simplification.
 ## Usage
 
 ```shell
-usage: reconstruct3d <left_image> <right_image> <obj_name>
+usage: reconstruct3d
+    [--project-title project_title]
+    [--image-pair left right]
+    [--set folder_path]
     [--disparity-range min max]
     [--disparity-window size]
     [--no-wls-filter | --wls-filter lambda sigma]
@@ -36,10 +39,17 @@ usage: reconstruct3d <left_image> <right_image> <obj_name>
     [--simplify fraction]
     [--no-reconstruction]
     [--no-disparity]
+    [--with-rectification]
     [--help | -h]
 
 
  Parameters help
+    [--project-title project_title]
+         Defines the name of the current project
+    [--image-pair left right]
+         Receives 2 images to reconstruct the model
+    [--set folder_path]
+         Receives a set of images to reconstruct the model
     [--disparity-range min max]
          Minimum and maximum disparity must be positive and min > max
 
@@ -74,6 +84,9 @@ usage: reconstruct3d <left_image> <right_image> <obj_name>
     [--no-disparity]
          Disables disparity correspondence
 
+    [--with-rectification]
+         Enables rectfication
+
     [--help | -h]
 ```
 
@@ -82,6 +95,7 @@ usage: reconstruct3d <left_image> <right_image> <obj_name>
 1. Install [Vagrant](https://www.vagrantup.com/) and [Virtualbox](https://www.virtualbox.org/)
 2. Clone this repository
 3. Go to the repository folder, and create a new virtal machine with:
+4. On the VM you need to install the Electron library to use the interface module
 
 ```shell
 $ vagrant up
